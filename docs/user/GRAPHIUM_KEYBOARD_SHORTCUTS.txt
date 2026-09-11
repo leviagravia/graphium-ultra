@@ -1,0 +1,75 @@
+GRAPHIUM KEYBOARD SHORTCUTS
+=================================
+
+File
+  Ctrl+N          New
+  Ctrl+O          Open…
+  Ctrl+S          Save
+  Ctrl+Shift+S    Save As…
+  F5              Reload from Disk
+  Ctrl+Shift+P    Print Preview
+  Ctrl+P          Print…
+  Ctrl+Q          Quit
+
+Edit
+  Ctrl+Z          Undo
+  Ctrl+Shift+Z    Redo
+  Ctrl+X          Cut
+  Ctrl+C          Copy
+  Ctrl+V          Paste
+  Delete          Delete selection
+  Ctrl+A          Select All
+
+Search
+  Ctrl+F          Find…
+  F3              Find Next
+  Shift+F3        Find Previous
+  Ctrl+H          Replace…
+  Ctrl+G          Go to Line…
+
+Find Next/Previous are product commands, not private buttons in the search bar. After a
+query has been entered, F3 and Shift+F3 continue to work when the search bar is hidden.
+Search wraps once automatically.
+
+
+View
+  Ctrl++          Zoom In
+  Ctrl+-          Zoom Out
+  Ctrl+0          Reset Zoom
+  F11             Full Screen
+
+Status Bar, Line Numbers, Word Wrap and Font… are direct View commands without dedicated
+accelerators. Their persistent state is changed from the View menu.
+
+Document
+  F2              Check Spelling…
+  Encoding, Line Endings and Statistics… have no dedicated accelerators.
+
+Commands without dedicated accelerators
+--------------------------------------------
+Open Recent, Clear Recent, Save a Copy…, Save Version Copy…, Properties…, Page Setup…, Encoding,
+Line Endings and Statistics… are intentionally menu-driven. Check Spelling uses F2; Reload from Disk uses F5; Ctrl+Shift+P
+remains Print Preview and Ctrl+P remains Print.
+
+Help commands intentionally have no global accelerator.
+
+Linux Mint/Cinnamon note
+------------------------
+Graphium does not use Ctrl+Alt+L. New accelerators are checked against active desktop
+global bindings before a desktop candidate is accepted.
+
+Text transformations
+  Ctrl+U          Uppercase
+  Ctrl+Shift+L    Lowercase
+  Alt+Up          Move Lines Up
+  Alt+Down        Move Lines Down
+  Duplicate Line / Selection and Trim Trailing Spaces have no dedicated accelerator and remain
+  explicit Edit -> Transform Text menu actions.
+
+
+Tab controls and appearance
+  Tab Width -> 2 / 3 / 4 / 8 / Other… has no dedicated accelerator.
+  Insert Spaces Instead of Tabs has no dedicated accelerator.
+  Appearance -> System / Light / Dark has no dedicated accelerator.
+  A normal Tab key follows Insert Spaces Instead of Tabs; modified Tab combinations are not
+  repurposed by these settings.

@@ -1,0 +1,87 @@
+GRAPHIUM G08 — ADOPT / ADAPT / REJECT / DEFER + LIGHTWEIGHT BUDGET
+Date: 2026-08-18
+Baseline: G07 published commit 7a3f49218dbabdbd6e47114a5fde2f4999f9c841
+
+===============================================================================
+A. DECISION MATRIX
+===============================================================================
+
+ADOPT
+  - File -> Page Setup…, Print Preview, Print… as the G08 command group.
+  - Ctrl+P for Print… (Leafpad/L3afpad/gedit convention).
+  - Ctrl+Shift+P for Print Preview (Leafpad/L3afpad/gedit convention).
+  - No dedicated accelerator for Page Setup….
+  - One fresh GtkPrintOperation per Preview/Print activation.
+  - GtkPrintOperation native PREVIEW action; no custom preview window.
+  - Pango/Cairo rendering over a captured plain-text snapshot.
+  - Persistent Page Setup, loaded on first print-family action only.
+  - Current Graphium persistent base font as print body font.
+  - Page-width wrapping independent of screen Word Wrap.
+  - Minimal fixed document-title + page-number header/footer information.
+  - APPLY-only advancement of any accepted print-operation runtime settings.
+  - Explicit error surface; Cancel is neutral.
+
+ADAPT
+  - Leafpad's static page setup -> window-scoped lazy Graphium print controller + persisted product
+    Page Setup authority.
+  - Mature disk persistence -> persist Page Setup only; printer/print settings are process-memory
+    convenience, not persistent v1 product state.
+  - Mature print layouts -> plain text only, black-on-paper semantics, no syntax styling.
+  - Snapshot ownership -> capture exact live GtkTextBuffer text once at action activation; no
+    mutation/rebinding or Save prerequisite.
+  - GTK page-setup native serialization -> product-local XDG config path with atomic replacement
+    and mode 0600; malformed/missing state falls back without startup mutation.
+
+REJECT G08/V1
+  - GtkSourceView / GtkSourcePrintCompositor dependency.
+  - Custom print preview UI.
+  - Print worker/thread/service/background queue.
+  - Async job/progress state by default.
+  - Custom print preferences tab.
+  - Printable syntax highlighting.
+  - Printable line numbers / line-number interval controls.
+  - Separate body/header/line-number font controls.
+  - Dark-paper/theme printing.
+  - Automatic document Save before printing.
+  - Printing to Recent/history/session state.
+  - Fixed hard-coded margins as the Page Setup authority.
+  - Print code/import/file I/O on ordinary startup.
+
+DEFER
+  - Persistent printer-specific GtkPrintSettings beyond process lifetime: post-v1 only if user
+    evidence justifies it.
+  - Async/worker printing: no pre-authorization; reconsider only after a valid measured product
+    failure and failure-specific mature-source re-audit.
+  - Advanced header/footer configuration, selection-print UI and print-style options: post-v1 only
+    if concrete user demand appears.
+
+===============================================================================
+B. LIGHTWEIGHT BUDGET
+===============================================================================
+
+QUICK-EDIT VALUE: PASS
+  Printing/Page Setup are conventional desktop-editor capabilities and close a real gap versus
+  Leafpad/L3afpad/Mousepad/gedit-class editors.
+
+MENTAL-MODEL COST: PASS
+  Three conventional File commands. Page Setup changes page geometry; Preview observes; Print
+  emits output. No extra preferences surface.
+
+PERSISTENT/BACKGROUND COST: PASS
+  One small product-local page-setup config only. No DB, queue, worker, monitor, cache, service,
+  print history or persistent printer-selection platform.
+
+STARTUP PATH: PASS BY FROZEN CONTRACT
+  Print implementation module must be locally imported only after a print-family action.
+  No GtkPrintOperation/GtkPageSetup/GtkPrintSettings/Pango print layout and no page-setup file I/O
+  during ordinary startup. Candidate must prove this; it is not assumed.
+
+ARCHITECTURE COST: PASS
+  No GraphiumCore expansion required; document_authority_count remains 1 and
+  physical_writer_authority_count remains 1. Printing is GTK output/presentation only.
+
+DUPLICATION: PASS
+  Reuse XDG resolver, command catalog, existing modal-warning/error conventions and current base
+  font state. Do not duplicate document serialization/save infrastructure for printing.
+
+LIGHTWEIGHT_BUDGET_GATE=PASS

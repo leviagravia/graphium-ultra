@@ -1,0 +1,47 @@
+GRAPHIUM G03 — TARGETED MATURE-SOURCE AUDIT
+Date: 2026-08-14
+Question: how should a fast/simple/safe quick-edit editor persist Save and Save As?
+
+Primary direct audit authority re-read:
+CALAMUS_W114_STRATEGIC_AUDIT_R3_FINAL_ARCHITECTURE_PROPOSAL_20260809.md
+
+Direct dependency identities in that audit:
+- QtBase 6.11.1 archive SHA-256 d9594a31228aa23ad6b531719a29b45f0f3989fe6c136d45767ea179f233c1ac
+- KTextEditor 6.28.0 archive SHA-256 63b7bbd9325cfda64e2c8f862e2327270ef7a9d1f887b5c6585f372511d33f8d
+
+Corroborating audited families include GLib/GIO 2.80, GtkSourceView clients, GNOME Text Editor,
+gedit/Pluma, GNOME Builder, Geany/Scintilla, NotepadNext, Vim classic, Emacs, nano, Helix,
+Ghostwriter, QOwnNotes, JOE, CherryTree and others catalogued by W114.
+
+ADOPT / ADAPT:
+- same-directory staging + namespace commit;
+- preserve logical symlink while committing validated canonical target;
+- strict serialization before target mutation;
+- fail precommit on stage sync error;
+- late target/parent revalidation;
+- race-safe no-overwrite lane for an absent Save-As target;
+- parent-directory fsync after namespace commit;
+- fresh postcommit baseline verification;
+- saved editor state advances only for the bytes actually committed;
+- Save As rebinding occurs only after commit.
+
+REJECT:
+- QSaveFile-style direct-write fallback;
+- raw truncate/write as authoritative Save;
+- mtime-only or watcher-only stale authorization;
+- silent hardlink breakage;
+- lossy encoding replacement;
+- replacing the logical symlink itself;
+- claiming true linearizable CAS;
+- reporting a postcommit durability/baseline problem as if no commit occurred.
+
+DEFER:
+- permanent file watcher / auto-reload / merge/conflict UI -> G11;
+- backup/local history/recovery journal;
+- remote/cloud URL persistence;
+- privilege escalation writer;
+- hardlink-preserving transactional overwrite.
+
+Graphium conclusion:
+Use the strongest compatible safety invariants internally while keeping the user-facing Save mental
+model as small as Leafpad/L3afpad/Mousepad quick-edit users expect.

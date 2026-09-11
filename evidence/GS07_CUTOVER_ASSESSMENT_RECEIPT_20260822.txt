@@ -1,0 +1,75 @@
+GRAPHIUM GS07 — FORMAL CUTOVER ASSESSMENT
+Date: 2026-08-22
+State: NON-CANDIDATE / ASSESSMENT PASS / CANONICAL CUTOVER NOT YET APPLIED
+
+AUTHORITIES
+Published canonical baseline before cutover:
+  G09 commit = fb3180911a56e25a5aaf13b3079f4daca7e09e9a
+  G09 tree   = cac5d9c9bae452854afc11b611f6e281f32fed8f
+
+GS07 T480-proven rebaseline source:
+  tree = fc6673e35d4f47bbe74a9a6c0de3a3f44cca8c81
+
+T480 FULL REISSUE RESULT
+- legacy G09 verifier: 354/354 PASS + STRICT_GATES PASS
+- old G04/G05/G06/G07/G08/G09 desktop/binding/shortcut shadow lanes: PASS
+- Behavioral authority: 142/142 PASS
+- Integration authority: 109/109 PASS
+- Packaging/Release authority: 11/11 PASS
+- True-GTK semantic sections lifecycle/actions/editing/search/view/printing/performance: PASS
+- corrected semantic View: PASS
+- structural simplification master gate: PASS
+- candidate declared/consumed: NO
+- Git mutation: NO
+
+ANTI-COSMETIC STRUCTURAL RESULT
+repo_files: 180 -> 172
+validation_files: 58 -> 47
+validation_loc: 9557 -> 3845 (-59.8%)
+test_modules: 38 -> 27
+harness_files: 21 -> 17
+harness_loc: 4780 -> 576 (-87.9%)
+authority/orchestration nodes: 21 -> 3
+cross-domain dependency edges: 10 -> 4
+validation->product import edges: 136 -> 90
+active Gxx validation files: 57 -> 0
+executable Gxx-reference validation files: 54 -> 0
+historical dependency files: 13 -> 0
+exact test-count oracle files: 1 -> 0
+compatibility surfaces: 8 -> 0
+runtime Gxx files: 39 -> 0
+runtime release metadata files: 3 -> 0
+source-inspection files: 7 -> 5
+
+Binding gates:
+NET_DELETION_GATE=PASS
+AUTHORITY_COUNT_GATE=PASS
+EXECUTABLE_HISTORY_GATE=PASS
+DEPENDENCY_REDUCTION_GATE=PASS
+HARNESS_SIZE_GATE=PASS
+TEST_VALUE_GATE=PASS
+NO_COMPATIBILITY_SHIM_GATE=PASS
+PACKAGING_SEPARATION_GATE=PASS
+PRODUCT_RELEASE_SEPARATION_GATE=PASS
+COMPLEXITY_TRAJECTORY_GATE=PASS
+DELETION_PROOF=PASS
+PERMANENT_PROPERTY_COVERAGE=PASS
+STRUCTURAL_SIMPLIFICATION_IS_NET_REDUCTIVE=PASS
+
+MATURE-SOURCE FINAL REVIEW
+PASS. Mousepad, gedit, GNOME Text Editor, Leafpad, L3afpad and FeatherPad support the concern/component-oriented ownership, product/test packaging separation, build-owned version identity and removal of executable historical validation universes. Graphium-specific stronger safety/performance invariants remain retained.
+
+CUTOVER DECISION
+GS07_CUTOVER_ASSESSMENT=PASS
+GS07_READY_FOR_CANONICAL_CUTOVER=YES
+GS07_STRUCTURAL_SIMPLIFICATION=PROVEN_NET_REDUCTIVE
+GS07_FUNCTIONAL_REBASELINE=T480_PROVEN
+G10_UNFREEZE_ELIGIBLE=YES_AFTER_CANONICAL_CUTOVER
+
+IMPORTANT STATE BOUNDARY
+This assessment does NOT mutate the canonical repository. Until the GS07 rebaseline is committed/pushed and remote identity is verified, the canonical repository remains G09 published and G10 remains frozen.
+
+G10_FROZEN=YES_PENDING_GS07_CANONICAL_CUTOVER
+G10_CANDIDATE_ATTEMPTS=0/2
+G10_PRODUCT_WORK=FORBIDDEN_UNTIL_CUTOVER
+NEXT_STEP=PREPARE_GS07_CANONICAL_CUTOVER_FINALIZER

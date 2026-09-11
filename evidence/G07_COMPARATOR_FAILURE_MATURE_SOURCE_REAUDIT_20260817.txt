@@ -1,0 +1,106 @@
+GRAPHIUM G07 — FIRST_VISIBLE COMPARATOR STOP / DIRECT MATURE-SOURCE REAUDIT
+Date: 2026-08-17
+Web research: NOT USED
+Scope: failure-specific audit before any product or harness repair.
+
+OBSERVED STOP
+The G07 startup-repair NON-CANDIDATE qualification completed Graphium G04-G07 True-GTK,
+View performance, Statistics, topology, shortcuts and Graphium FIRST_EDITABLE. Graphium
+FIRST_VISIBLE also completed all four workloads. The run then stopped when one Leafpad
+launch produced no new X11 top-level for the exact spawned PID. The runner classified the
+non-zero comparator process as a generic qualification error before the Graphium startup
+self-regression lane could execute.
+
+MATURE SOURCE: LEAFPAD 0.8.19
+- leafpad-main/src/window.c create_main_window(): creates `gtk_window_new(GTK_WINDOW_TOPLEVEL)`.
+- leafpad-main/src/main.c:304 create_main_window(); line 332 `gtk_widget_show_all(pub->mw->window)`;
+  only afterwards, for a command-line file, lines 347-348 call `file_open_real()`; line 383 enters `gtk_main()`.
+- No GApplication/server/single-instance forwarding exists in this startup path.
+CONSEQUENCE: exact spawned PID is the correct ownership oracle for Leafpad. A one-off
+absence of its window is a comparator/X11 launch block to diagnose; accepting another PID
+would weaken the oracle and contradict the source.
+
+MATURE SOURCE: L3AFPAD
+- l3afpad-master/src/window.c creates a direct `GTK_WINDOW_TOPLEVEL`.
+- src/main.c line 250 shows the window, lines 265-266 open a requested file, line 302 enters gtk_main().
+- No server/single-instance forwarding in this path.
+CONSEQUENCE: same direct-owner exact-PID model as Leafpad.
+
+MATURE SOURCE: MOUSEPAD 0.7.0
+- mousepad/mousepad-application.c option table lines 179-181 defines `--disable-server`.
+- same file lines 507-510 reacts to it by adding `G_APPLICATION_NON_UNIQUE`.
+CONSEQUENCE: comparator must use `--disable-server` when available so the spawned process
+owns the measured window. Graphium's exact-PID design is correct here.
+
+MATURE SOURCE: FEATHERPAD
+- featherpad/main.cpp documents `--standalone` / `-s` as "Start a standalone process".
+- featherpad/singleton.cpp init(bool standalone) makes standalone an independent primary instance.
+- singleton.cpp creates/shows the FP window in that process.
+CONSEQUENCE: comparator must use `--standalone`; accepting an existing primary-instance
+window is forbidden.
+
+SUPPORTING MATURE CONTRAST: GNOME TEXT EDITOR
+- src/editor-application.c uses GApplication HANDLES_COMMAND_LINE/HANDLES_OPEN and can add
+  G_APPLICATION_NON_UNIQUE depending on invocation mode.
+CONSEQUENCE: mature editors legitimately have heterogeneous process ownership models.
+A performance harness must model each application's ownership boundary explicitly.
+
+HARNESS AUDIT
+1. `tools/g04_comparator_proxy.py` correctly requires exact spawned-PID ownership, but:
+   - after terminating a sample it waits only a fixed 50 ms and does not prove the EWMH
+     `_NET_CLIENT_LIST` has quiesced before the next fresh process;
+   - a no-window launch raises generic RuntimeError -> rc=1, which the G07 runner labels as
+     qualification error rather than comparator/infrastructure block;
+   - the receipt is written only after *all* applications complete, so already-valid Graphium
+     measurements are lost as formal input when a later comparator blocks.
+2. `tools/g06_startup_regression.py` calls itself an anti-bloat self-regression gate and
+   numerically uses only Graphium FIRST_EDITABLE/FIRST_VISIBLE, yet it rejects the receipt
+   unless Leafpad, L3afpad, Mousepad and FeatherPad are all present.
+3. This contradicts the already-frozen architecture contract:
+   `Missing comparators block the comparative receipt; they do not become a product failure.`
+
+DIRECT MATURE-SOURCE DISPOSITION
+ADOPT:
+- Leafpad/L3afpad direct exact-PID ownership.
+- Mousepad explicit non-unique/no-server ownership for measurement.
+- FeatherPad explicit standalone ownership for measurement.
+- Application-specific process ownership instead of one generic process assumption.
+
+ADAPT:
+- Add a bounded X11 quiescence boundary after the measured process exits: wait until no
+  top-level remains owned by that PID before starting the next sample.
+- A no-window or non-quiescent launch is `COMPARATOR_BLOCKED` (exit 3), never a Graphium
+  product failure. Capture return code, command, exact PID, owned-window snapshot and output.
+- Do NOT silently retry or discard a failed sample. A blocked comparative receipt stays blocked.
+- Persist the receipt incrementally after each Graphium/comparator workload so Graphium
+  self-regression evidence survives a later competitor block.
+- Make the startup self-regression gate depend only on Graphium measurements; comparator
+  completeness remains mandatory for the separate comparative receipt.
+
+REJECT:
+- accepting a window from a different PID;
+- weakening Mousepad `--disable-server` or FeatherPad `--standalone` isolation;
+- silently retrying until a good benchmark number appears;
+- treating a Leafpad launch/X11 block as a Graphium product regression;
+- changing Graphium runtime to fix an external comparator launch anomaly.
+
+CURRENT PRODUCT EVIDENCE FROM THE STOPPED RUN
+The repaired G07 tree already measured:
+FIRST_EDITABLE: empty 259.929 ms; 5KiB 265.432; 1MiB 630.653; 10MiB 4096.219.
+FIRST_VISIBLE Graphium: empty 278.256 ms; 5KiB 294.204; 1MiB 325.825; 10MiB 633.120.
+Against the frozen G04 anti-bloat limits, every one of these Graphium time measurements is
+within limit, including the two scenarios that failed before the Recent fsync repair.
+This is strong causal evidence that the Recent repair removed the original fixed-cost startup
+regression, but formal startup-self PASS must still be produced by the corrected gate.
+
+CLASSIFICATION
+CURRENT_STOP=COMPARATOR_OR_X11_INFRASTRUCTURE_BLOCK
+GRAPHIIUM_PRODUCT_DEFECT_PROVEN=NO
+RECENT_REPAIR_REGRESSION_PROVEN=NO
+COMPARATOR_ORACLE_OWNERSHIP_MODEL=CORRECT
+COMPARATOR_FAILURE_CLASSIFICATION/HANDOFF=DEFECTIVE
+STARTUP_SELF_GATE_COMPARATOR_DEPENDENCY=DEFECTIVE
+PRODUCT_RUNTIME_CHANGE_REQUIRED=NO
+HARNESS_REPAIR_REQUIRED=YES
+MATURE_REAUDIT=PASS
+CONFIRMATION_BIAS_COUNTERMEASURE=PASS

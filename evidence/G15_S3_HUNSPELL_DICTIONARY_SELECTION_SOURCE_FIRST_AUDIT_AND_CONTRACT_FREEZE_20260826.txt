@@ -1,0 +1,420 @@
+GRAPHIUM G15-S3 — HUNSPELL DICTIONARY SELECTION
+SOURCE-FIRST MATURE-SOURCE AUDIT + CONTRACT FREEZE
+Date: 2026-08-26
+Status: AUDIT PASS / CONTRACT FROZEN / IMPLEMENTATION NOT STARTED
+Candidate: NO
+Attempt consumed: NO
+Git mutation: NO
+
+======================================================================
+1. AUTHORIZATION AND SCOPE
+======================================================================
+
+The user explicitly authorized the next step after G15-S2 achieved focused
+True-GTK NON-CANDIDATE PASS on T480. This step is audit/design only.
+No G15-S3 product implementation, Candidate declaration or canonical Git
+mutation is authorized by this audit.
+
+G15-S3 scope is strictly:
+- retain Document -> Check Spelling… / F2;
+- replace the current non-interactive “Dictionary: System default” projection
+  with a real selector;
+- retain System default;
+- offer only actually available Hunspell base dictionaries;
+- keep Graphium’s existing optional/on-demand external Hunspell architecture.
+
+Explicitly out of scope:
+- GUI language selector / i18n subsystem;
+- live/background spell checking;
+- automatic language detection;
+- grammar checking or autocorrect;
+- personal-dictionary management / Add to Dictionary;
+- multiple simultaneous dictionaries;
+- new plugin framework, binding, daemon or service;
+- per-document spelling metadata;
+- persistent spelling-language preference.
+
+======================================================================
+2. EXACT GRAPHium PRE-S3 OWNERSHIP
+======================================================================
+
+Audited source: exact G15-S2 NON-CANDIDATE package that passed the user’s
+T480 focused True-GTK probe.
+
+Current ownership:
+- graphium/infrastructure/hunspell_session.py
+  sole Hunspell subprocess/protocol authority;
+- graphium/application/spellcheck.py
+  GTK-free dialog-lifetime spell-session and replacement authority adapter;
+- graphium/adapters/gtk/spelling.py
+  thin modal GTK projection;
+- graphium/adapters/gtk/window.py
+  lazy imports spelling projection only on explicit Check Spelling action.
+
+Current Hunspell session argv:
+  hunspell -a -i UTF-8 --check-apostrophe
+
+Current dialog Dictionary row:
+  static label: System default
+
+Current G14 frozen guarantees retained unless explicitly superseded here:
+- no spell process, worker or dictionary discovery at startup/idle;
+- no document pathname passed to Hunspell;
+- shell=False;
+- bounded token/protocol/suggestion handling;
+- Hunspell request I/O off GTK main thread;
+- timeout/cancel/fault reaps child;
+- replacement only through the existing programmatic-edit authority;
+- no persistent spell state.
+
+======================================================================
+3. DIRECT MATURE SOURCE CORPUS
+======================================================================
+
+All six mature archives were re-extracted directly from the G14 handover.
+Archive SHA-256 identities:
+
+Mousepad 0.7.0
+  e86c59feb08126d4cace368432c16b2dee8e519aaca8a9d2b409ae1cdd200802
+
+Leafpad
+  78bae120104965d841097ba438aa02b92efa349f2e9989b5026c1e36dd6b3b6e
+
+L3afpad
+  0bc6cbb96fbf37eaf961a73d2a2c5fbcd9682a4d5bf2d7112eb1bfed0b04fdb6
+
+FeatherPad
+  1651a43c8541d6921f6ece30a82bcb38e1341fbee2e17be9081468fe6ea548ac
+
+gedit
+  957142746934474b84457b6fb171fb1ffcc0942facf7131f9c3c6f492247737d
+
+GNOME Text Editor
+  b7e1c075e40929765dfebb68297d9100eb4fb3b7fe71cec53d070cfc451c5555
+
+======================================================================
+4. MATURE SOURCE FINDINGS
+======================================================================
+
+4.1 Mousepad 0.7.0 — ADOPT enumeration, REJECT persistent preference
+--------------------------------------------------------------------
+Direct source: plugins/gspell-plugin/gspell-plugin.c
+
+Mousepad obtains available spell languages from gspell_language_get_available(),
+builds a user-visible model from language name + code, selects a default from
+gspell_language_get_default(), and applies a chosen language through
+ gspell_checker_set_language().
+
+Mousepad persists a global plugin preference:
+  plugins.gspell.preferences.default-language
+
+Finding for Graphium:
+- ADOPT: expose only languages/dictionaries that the backend says are available.
+- ADOPT: retain a backend/system default.
+- REJECT: add a persistent default-language setting merely to satisfy G15-S3.
+  Graphium’s spelling operation is explicit and dialog-lifetime; a new persistent
+  authority is not required by the user request.
+
+4.2 gedit — ADOPT explicit language choice, REJECT per-document metadata
+------------------------------------------------------------------------
+Direct source:
+  plugins/spell/gedit-spell-language-dialog.c
+  plugins/spell/gedit-spell-plugin.c
+
+The spell plugin exposes separate Check Spelling and Set Language actions.
+Its language dialog enumerates available spell-checker languages and applies the
+selected language explicitly. gedit also persists spell-language metadata on the
+current document.
+
+Finding for Graphium:
+- ADOPT: explicit user choice is a first-class spell-check property.
+- ADAPT: place the choice in Graphium’s existing Dictionary row instead of adding
+  another Document action/dialog.
+- REJECT: document metadata. Graphium remains a plain-text editor and G15-S3 must
+  not create hidden file/document spelling authority.
+
+4.3 GNOME Text Editor — ADOPT backend-settable language, REJECT metadata model
+-----------------------------------------------------------------------------
+Direct source: src/editor-document.c (libspelling)
+
+The document owns a SpellingChecker; language changes invalidate/recheck spelling,
+and language is stored/restored as native-file metadata.
+
+Finding for Graphium:
+- ADOPT conceptually: changing language means changing the checker authority and
+  rechecking under the new language.
+- REJECT: per-file metadata and persistent spelling state.
+- REJECT: migrate to libspelling solely for this corrective slice.
+
+4.4 FeatherPad — ADOPT direct Hunspell dictionary boundary, REJECT path manager
+-----------------------------------------------------------------------------
+Direct source:
+  featherpad/config.cpp
+  featherpad/pref.cpp
+  featherpad/fpwin.cpp
+  featherpad/spellChecker.cpp
+
+FeatherPad persists a Hunspell dictionary path, validates .dic + .aff, and constructs
+Hunspell directly from the selected dictionary base. Its Preferences can also browse
+for and add a dictionary file.
+
+Finding for Graphium:
+- ADOPT: a concrete Hunspell base dictionary is a valid direct backend selection.
+- ADOPT: require a real .dic + .aff base pair for a selectable base dictionary.
+- REJECT: file-picker/Add Dictionary management.
+- REJECT: persistent dictionaryPath configuration.
+- REJECT: link the Hunspell C++ library; Graphium keeps its already-certified
+  external CLI boundary.
+
+4.5 Leafpad / L3afpad — NEGATIVE CONTROL
+----------------------------------------
+The audited source does not provide a comparable spell-language selection system.
+No spelling architecture is imported from them for G15-S3.
+
+======================================================================
+5. HUNSPELL CLI AUTHORITY FINDINGS
+======================================================================
+
+Current Hunspell documentation defines:
+- -D: show detected loaded dictionary path, search path and available dictionaries;
+- -d dict[,dict2,...]: select dictionaries by base name with or without paths;
+- a base dictionary consists of a matching .aff + .dic pair;
+- System/default dictionary selection depends on locale when -d is absent.
+
+Important robustness finding:
+Hunspell -D textual output has changed across Hunspell versions. Therefore Graphium
+MUST NOT parse localized/human headings such as “AVAILABLE DICTIONARIES”.
+
+Frozen adaptation:
+- run Hunspell’s own -D discovery only after explicit Check Spelling invocation;
+- execute under LC_ALL=C;
+- treat output as untrusted bounded diagnostic text;
+- ignore headings/search-path prose entirely;
+- accept a candidate only when an output line denotes a filesystem base path for
+  which both <base>.aff and <base>.dic are regular files;
+- reject malformed/unsafe candidates;
+- deduplicate and stably sort;
+- use the exact discovered base path as the -d argument, not a reconstructed
+  hard-coded distro path.
+
+This avoids duplicating Hunspell’s search-path authority while also avoiding a
+version-sensitive parser for its human headings.
+
+======================================================================
+6. FROZEN G15-S3 PRODUCT CONTRACT
+======================================================================
+
+6.1 UI
+------
+The existing modal spelling dialog keeps its topology. The first row becomes:
+
+  Dictionary: [ System default v ]
+
+The combo contains:
+1. System default
+2. verified available Hunspell base dictionaries, typically displayed by their
+   canonical dictionary IDs such as it_IT, en_GB, en_US.
+
+No language-name mapping database is added. The Hunspell dictionary identifier is
+the source-authentic UI identity. If duplicate basenames are discovered from
+multiple paths, the UI must disambiguate them with parent-path context rather than
+silently collapse distinct authorities.
+
+6.2 Lifetime / persistence
+--------------------------
+Dictionary selection is DIALOG-LOCAL ONLY.
+
+It is NOT:
+- written to ViewSettings;
+- written to another JSON/config store;
+- written to document metadata;
+- retained across application restart;
+- auto-detected from document contents.
+
+Rationale: this satisfies explicit language choice without creating a new persistent
+configuration authority, and preserves the original G14 lightweight boundary.
+
+6.3 Discovery
+-------------
+Discovery is optional and on-demand only. No import/startup/idle scan is permitted.
+
+The existing single spell worker is reused for bounded discovery and later token
+requests. Discovery must not create a second worker. At most one Hunspell child may
+exist at a time: the short-lived -D child is fully reaped before a spell pipe child
+may start.
+
+Discovery failure/timeout does NOT disable System default. It degrades to:
+  [ System default ]
+and the existing system-default spell attempt remains available.
+
+6.4 Selected session argv
+-------------------------
+System default:
+  existing argv remains semantically identical; no -d argument.
+
+Explicit dictionary:
+  existing argv plus a separate argv pair:
+    -d <verified-base-path>
+
+shell=False remains mandatory. The dictionary path is never shell text and never
+comes from an arbitrary editable field.
+
+6.5 Changing dictionary while dialog is open
+---------------------------------------------
+Graphium keeps the current low-friction behavior: spell checking may begin using
+System default once discovery has completed.
+
+If the user changes Dictionary:
+- invalidate/fence any old worker result;
+- cancel, terminate/reap and close the old Hunspell session;
+- ensure no old result can project into the UI;
+- verify the editor has not changed outside the spell dialog’s owned edits;
+- create a fresh SpellCheckController snapshot of the current editor text;
+- create a fresh HunspellPipeSession with the selected dictionary;
+- restart checking from the beginning under the new dictionary;
+- reset dialog-local Ignore All state.
+
+Previously applied Graphium Replace edits remain ordinary document edits and normal
+Undo/Redo history. Dictionary selection itself never changes text, dirty/savepoint,
+history or representation profile.
+
+If the editor state changed externally/unowned, dictionary switching MUST NOT bypass
+the existing stale-session fence; fail closed and require a new Check Spelling run.
+
+6.6 No new capability framework
+-------------------------------
+G15-S3 must not add:
+- new top-level module for external tools;
+- plugin API;
+- Hunspell Python/C++ binding;
+- daemon/service;
+- file watcher;
+- settings store;
+- document metadata;
+- startup probe;
+- dictionary downloader/installer.
+
+The expected implementation owners remain:
+- graphium/infrastructure/hunspell_session.py
+- graphium/adapters/gtk/spelling.py
+plus focused tests/docs/authority updates.
+Application spell replacement semantics should not need a new domain/application
+model solely for dictionary selection.
+
+======================================================================
+7. SECURITY / FAILURE CONTRACT
+======================================================================
+
+Discovery and selected dictionary handling must be fail-closed:
+- executable path still resolved on demand;
+- shell=False;
+- discovery timeout bounded;
+- discovery output byte budget bounded;
+- number of accepted dictionaries bounded;
+- candidate path length bounded;
+- no NUL/newline/comma semantic injection in selected -d value;
+- only discovered existing .aff + .dic base pairs selectable;
+- disappearance between discovery and session start produces ordinary optional
+  capability failure, never fallback to an unintended dictionary;
+- every discovery/session child terminated/reaped on timeout/fault/close;
+- closing the GTK dialog during discovery or checking leaves no worker/child alive;
+- no document pathname is ever passed to Hunspell.
+
+======================================================================
+8. ADOPT / ADAPT / REJECT MATRIX
+======================================================================
+
+ADOPT
+- real dictionary chooser;
+- System default first option;
+- enumerate backend-available dictionaries;
+- explicit -d selection;
+- .aff + .dic validation;
+- recheck after language/dictionary change;
+- all discovery only after explicit Check Spelling.
+
+ADAPT
+- Mousepad/gspell enumeration -> Hunspell -D + filesystem verification;
+- gedit explicit language setting -> existing Dictionary row combo;
+- GNOME recheck-on-language-change -> restart Graphium dialog session safely;
+- FeatherPad direct dictionary base -> external CLI -d path, no library binding.
+
+REJECT
+- persistent global default language;
+- per-document spelling metadata;
+- Preferences spell page;
+- Add Dictionary/file picker;
+- hard-coded distro dictionary directory list as authority;
+- parsing human -D headings;
+- multi-dictionary selection;
+- automatic language detection;
+- GUI-language selector;
+- live spelling/background scanning;
+- personal dictionary writes;
+- gspell/libspelling/Hunspell binding migration.
+
+======================================================================
+9. PRE-IMPLEMENTATION RED/GREEN GATES
+======================================================================
+
+At minimum the implementation must establish focused gates for:
+
+01. System-default argv remains without -d.
+02. Explicit verified dictionary adds exactly one -d + base-path argv pair.
+03. Dictionary path is shell-independent and protocol-safe.
+04. -D discovery is on-demand only and LC_ALL=C.
+05. Discovery timeout is bounded and child is reaped.
+06. Discovery output size and dictionary count are bounded.
+07. Parser ignores headings/prose and accepts only real .aff + .dic pairs.
+08. Duplicate dictionary IDs are stably disambiguated.
+09. Discovery failure leaves System default usable.
+10. No dictionary discovery/process/thread occurs on normal startup/import.
+11. Existing dialog row is a real combo, not a static label.
+12. Initial combo value is System default.
+13. Explicit selection starts Hunspell with exact selected base path.
+14. Changing dictionary fences stale callback, reaps old child and restarts scan.
+15. Dictionary change resets Ignore All only; it does not alter text/dirty/history.
+16. Previously accepted Replace edits survive restart and remain Undo/Redo-normal.
+17. External/unowned editor change cannot be masked by dictionary switching.
+18. Close during discovery/check leaves no worker/Hunspell child.
+19. No new persistent setting/config/document metadata is written.
+20. No new dependency/module/framework and no GUI-language selector appears.
+21. Full permanent Behavioral/Integration/Packaging-Release regression remains PASS.
+22. Focused True-GTK probe, only if local qualification passes, proves real combo,
+    real T480 dictionary enumeration, explicit selection and process cleanup.
+
+Manual desktop tests expected: 0 unless automation proves insufficient.
+
+======================================================================
+10. LIGHTWEIGHT BUDGET
+======================================================================
+
+Mandatory:
+- zero startup/idle cost;
+- zero persistent state/schema growth;
+- zero new dependency;
+- zero new subsystem/module/framework;
+- one existing dialog only;
+- one existing worker only;
+- at most one Hunspell child concurrently;
+- discovery confined to explicit Check Spelling;
+- no document metadata;
+- no Graphium GUI-language machinery.
+
+The implementation is acceptable only if these constraints remain true after the
+full source/test diff, not merely if functional tests pass.
+
+======================================================================
+11. AUDIT RESULT
+======================================================================
+
+G15_S3_SOURCE_FIRST_MATURE_AUDIT=PASS
+G15_S3_HUNSPELL_DIRECT_AUTHORITY_AUDIT=PASS
+G15_S3_CONTRACT=FROZEN
+G15_S3_IMPLEMENTATION_STARTED=NO
+G15_S3_CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+MANUAL_TESTS_PLANNED=0
+NEXT_STEP=G15_S3_NONCANDIDATE_RED_GREEN_IMPLEMENTATION
+REQUIRES_EXPLICIT_AUTHORIZATION=YES

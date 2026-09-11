@@ -1,0 +1,378 @@
+GRAPHIUM G09 — CONTRACT FREEZE
+Date: 2026-08-20
+Published baseline commit: 5d1c342eafbff8b4b38f0656e0dbc1fe315362b4
+Published baseline tree:   6535bf7d560ceaed3e31f407317fde0a8618ba47
+
+G09_CONTRACT=FROZEN
+G09_IMPLEMENTATION=NOT_STARTED
+G09_CANDIDATE_ATTEMPTS_CONSUMED=0
+
+===============================================================================
+1. SCOPE / ANTI-SCOPE
+===============================================================================
+
+IN SCOPE — exactly six actions
+  Uppercase
+  Lowercase
+  Duplicate Line / Selection
+  Move Lines Up
+  Move Lines Down
+  Trim Trailing Spaces
+
+OUT OF SCOPE
+  Title Case, Opposite Case, Remove Extra Spaces, Join Lines, Reflow Paragraph, tabs/spaces format
+  conversion, formatting preferences, syntax/language-aware transformations, top-level Format menu,
+  Open/Save normalization, background processing and GtkSourceView.
+
+===============================================================================
+2. COMMAND SURFACE / MENU / ACCELERATORS
+===============================================================================
+
+Canonical top-level menus remain exactly:
+  File · Edit · Search · View · Document · Help
+
+Edit gains one nested submenu after the existing ordinary Edit commands:
+  Transform Text >
+    Uppercase
+    Lowercase
+    Duplicate Line / Selection
+    Move Lines Up
+    Move Lines Down
+    Trim Trailing Spaces
+
+Action identifiers:
+  uppercase
+  lowercase
+  duplicate-line-selection
+  move-lines-up
+  move-lines-down
+  trim-trailing-spaces
+
+Accelerators:
+  Move Lines Up    Alt+Up
+  Move Lines Down  Alt+Down
+  all other G09 actions: none
+
+Existing forbidden accelerator Ctrl+Alt+L remains forbidden. Existing accelerator map must remain
+collision-free. If the T480/Cinnamon shortcut audit disproves Alt+Up/Alt+Down safety, that is a
+contract failure requiring re-audit; do not silently substitute another shortcut.
+
+COMMANDS remains the single action/accelerator/Help authority. The implementation may minimally add
+nested menu-routing metadata/logic, but may not introduce a second command catalog.
+
+===============================================================================
+3. PLAN / OWNERSHIP ARCHITECTURE
+===============================================================================
+
+Add one small GTK-free application planner module (expected name text_transform.py; mechanical name
+variation is allowed only if architecture is unchanged).
+
+Immutable TransformationPlan must carry at least:
+  source_state_id
+  source_text
+  final_text
+  operations: tuple[ReplayOperation, ...]
+  before_view: ViewState
+  target_view: ViewState
+  changed_span_count
+
+It exposes pure planning functions for the six commands. No mutable/persistent transformation
+controller is needed.
+
+Application authority is exactly:
+  NativeEditorController.apply_prevalidated_programmatic_group()
+
+Window callback sequence:
+  1. capture current logical text + ViewState + current history state ID once;
+  2. build pure plan;
+  3. if changed, pass it to apply_prevalidated_programmatic_group();
+  4. refresh projection/scroll only after successful application;
+  5. if no-op, do not create a history state or dirty transition.
+
+Do not modify G05 Search merely to share plan infrastructure.
+
+===============================================================================
+4. COMMON TRANSFORMATION INVARIANTS
+===============================================================================
+
+- All offsets are Python character offsets over Graphium's current logical text.
+- Every actual command is exactly one Undo group and exactly one Redo group.
+- Undo restores exact source text + exact before_view + exact prior editor state identity.
+- Redo restores exact final text + target_view.
+- A semantic no-op has operations=(), final_text==source_text, target_view==before_view,
+  changed_span_count=0 and the exact same state ID.
+- Plans are bound to source_state_id; stale plans fail before mutation.
+- Final text must pass existing G04 renderability before mutation.
+- Replay payload must pass existing DeltaHistory payload budget before mutation.
+- Planner changed spans are capped at 50,000 before unbounded ReplayOperation materialization.
+- Any planning/scale/renderability/payload/apply failure leaves text, ViewState, history/session state
+  and saved/modified identity unchanged.
+- No command performs file I/O, Save, serialization or representation conversion.
+- CRLF-loaded documents still operate on Graphium logical LF text; existing serializer metadata
+  remains authoritative so a later Save preserves the document's representation contract.
+
+===============================================================================
+5. SELECTION / LINE PRIMITIVES
+===============================================================================
+
+Selection direction
+  before_view.insert_offset and selection_bound_offset are never collapsed into a directionless pair
+  for postcondition purposes. Use lo=min(insert,bound), hi=max(insert,bound) for source range math,
+  then reconstruct target insertion/bound ownership so forward/reversed selection direction remains
+  exact.
+
+Selected-line scope for Move/Trim
+  For a non-empty selection [lo,hi), affected lines are the lines containing selected characters.
+  The high endpoint uses character hi-1. Therefore a selection that ends exactly at column 0 of the
+  next line does NOT include that next line merely because the caret endpoint resides there.
+
+No-selection line scope
+  Duplicate/Move use the logical line containing the insertion caret.
+
+Line model
+  Newline separator is LF in logical text. Genuine blank lines are real lines. If text ends in LF,
+  split semantics expose a final zero-length terminal sentinel; that sentinel is not a movable line
+  or movable neighbor for Move Lines. This preserves final-EOL status under ordinary line swaps.
+
+===============================================================================
+6. UPPERCASE / LOWERCASE
+===============================================================================
+
+Availability
+  Enabled only when there is a non-empty selection. No-selection invocation must not be generated by
+  normal UI projection; planner-level no-selection handling is a no-op for hostile tests.
+
+Scope
+  Exact selected character range only. Never automatically expand to word/line/document.
+
+Unicode semantics
+  Use Python full-string str.upper() and str.lower(), locale-independent Unicode default behavior.
+  Do not use casefold(). Do not normalize NFC/NFD before or after conversion.
+  Expansion/contraction is valid and must be reflected in target offsets.
+  Hostile examples include:
+    "straße" upper -> "STRASSE"
+    U+0130 LATIN CAPITAL I WITH DOT ABOVE lower -> "i" + U+0307
+    U+0131 LATIN SMALL DOTLESS I upper -> "I"
+    combining sequences remain unnormalized except for Unicode casing mappings themselves.
+
+Operations
+  At most one DELETE old selection + one INSERT converted text at lo. If converted text equals old
+  selected text, exact no-op.
+
+Postcondition
+  The converted range remains selected. Its direction is identical to the pre-command selection
+  direction. Surrounding caret/text are unchanged except offset displacement caused by expansion.
+
+===============================================================================
+7. DUPLICATE LINE / SELECTION
+===============================================================================
+
+With a selection
+  Duplicate exactly source_text[lo:hi] immediately AFTER hi.
+  Do not round to lines and do not add whitespace/newlines.
+  Target selection is the newly inserted duplicate [hi, hi+len(selected_text)] with the same forward
+  or reversed direction as the original selection.
+
+Without a selection
+  Duplicate the current complete logical line immediately BELOW itself.
+  If the current line already has a terminating LF, duplicate its complete line text including that
+  separator at the end of the line.
+  If it is the final line without LF, insert "\n" + line_content after it.
+  Empty document/current empty final line is a valid line: duplicating it creates one LF and places
+  the caret on the new empty line.
+  A terminal empty line after an existing final LF is also duplicable: the result gains one more LF.
+
+Caret postcondition without selection
+  Collapsed caret on the newly duplicated line at the same logical character column as before.
+
+One command = one Undo regardless of line length/selection length.
+
+===============================================================================
+8. MOVE LINES UP / DOWN
+===============================================================================
+
+Scope
+  Selection => all lines touched by selected characters under section 5.
+  No selection => current movable logical line.
+
+Behavior
+  Move the affected contiguous line block exactly one real line up/down by swapping it with the
+  adjacent real line. Preserve every character inside both regions; do not trim/normalize text.
+
+Boundary no-op
+  Move Up when the block begins at the first real line => exact no-op.
+  Move Down when no real line exists after the block => exact no-op.
+  A zero-length terminal sentinel caused solely by final LF is not a real adjacent line.
+  Caret located only on that terminal sentinel => exact no-op for either Move command.
+
+Implementation shape
+  Planner may build one bounded local replacement region (adjacent line + moved block) represented
+  as DELETE old_region + INSERT reordered_region. No GtkSourceView move-lines API.
+
+View postcondition
+  The caret/selection travels with the moved block. Preserve:
+    - forward/reversed direction;
+    - first/last selected-line relative character offsets;
+    - partial first/last-line selection boundaries;
+    - high endpoint at start of an excluded next line as an affinity to the moved block end.
+  No-selection caret keeps the same logical column in the same moved line.
+
+Final-newline hostile cases must prove the frozen terminal-sentinel rule and representation neutrality.
+
+===============================================================================
+9. TRIM TRAILING SPACES
+===============================================================================
+
+Scope
+  Selection => all lines touched by selected characters under section 5.
+  No selection => entire document.
+
+Whitespace definition
+  Remove only U+0020 SPACE and U+0009 TAB that occur immediately before LF or logical EOF on an
+  affected line. Do NOT use str.isspace(); NBSP, other Unicode separators and indentation are not
+  generic trailing-space targets under this command.
+
+Operations
+  One descending DELETE operation per changed trailing run; no INSERT required. Changed trailing
+  runs are capped at 50,000 before operation-object explosion. Existing payload budget is independent.
+
+View mapping
+  Map both insertion and bound offsets through deletions. An endpoint inside deleted trailing
+  whitespace clamps to the start of that deleted run. Preserve selection direction. If nothing is
+  removed, exact no-op and exact before_view.
+
+Persistence rule
+  This command is NEVER called automatically by Open/Save/Save As/Save a Copy/Save Version Copy.
+
+===============================================================================
+10. DIRTY / SAVEPOINT / UNDO CONTRACT
+===============================================================================
+
+For every actual transform:
+  Saved state -> command => Modified.
+  One Undo => exact prior text/ViewState and Saved again if that prior state was saved.
+  One Redo => transformed state and Modified again.
+
+No-op transform:
+  does not change current_editor_state_id, saved_editor_state_id, title/status dirty projection or
+  Undo/Redo stacks.
+
+A transform does not alter document path, encoding, BOM/newline representation metadata, Recent,
+properties authority, print state, view preferences or search query state.
+
+===============================================================================
+11. ERRORS / USER SURFACE
+===============================================================================
+
+Planner input/scale failures, G04 renderability rejection and Undo payload rejection are handled as
+explicit command failures using existing Graphium warning/error conventions. Never partially apply.
+
+No progress dialog/background job is part of G09. The command must either complete synchronously
+within the frozen responsiveness envelope or fail before mutation.
+
+===============================================================================
+12. HOSTILE TEST MATRIX — MANDATORY
+===============================================================================
+
+Common
+  - empty document;
+  - start/end of document;
+  - saved -> transform -> Modified -> Undo -> Saved -> Redo -> Modified;
+  - exact one Undo/Redo;
+  - no-op exact state-ID/stack/ViewState neutrality;
+  - stale plan before mutation;
+  - payload overflow before mutation;
+  - G04 line/renderability violation before mutation;
+  - injected buffer failure exact rollback;
+  - injected post-buffer history/authority failure exact rollback;
+  - CRLF-loaded representation preserved by later Save;
+  - no automatic Open/Save cleanup;
+  - 50,000-span boundary PASS and 50,001 fail-closed where applicable.
+
+Case
+  - forward + reversed selection;
+  - no selection no-op planner;
+  - ASCII already-upper/lower no-op;
+  - ß expansion, U+0130 lower expansion, dotless i, combining marks;
+  - expansion at document boundaries;
+  - expansion that would violate G04 line limit fails before mutation.
+
+Duplicate
+  - arbitrary partial selection, multiline selection, reversed selection;
+  - current first/middle/final line;
+  - final line with and without final LF;
+  - blank line, terminal empty line, empty document;
+  - same-column target caret on new line;
+  - duplicate selection that would violate line/renderability/payload limit fails before mutation.
+
+Move
+  - current line and multiline selection;
+  - forward/reversed partial selections;
+  - high selection endpoint exactly at next-line column 0;
+  - first-line Up and last-real-line Down no-op;
+  - final LF / no final LF / consecutive trailing blank lines;
+  - terminal sentinel caret no-op;
+  - columns on short/long neighboring lines;
+  - full-document selected block boundary no-op;
+  - final text and selection geometry exact after Undo/Redo.
+
+Trim
+  - selection/no selection/reversed selection;
+  - selection ending at next-line column 0 excludes that next line;
+  - spaces only, tabs only, mixed space+tab;
+  - NBSP and other Unicode whitespace preserved;
+  - EOF with/without LF;
+  - endpoint inside removed whitespace clamps correctly;
+  - lines outside selected-line scope byte/logical-text unchanged;
+  - 50,001 changed lines fail before mutation.
+
+===============================================================================
+13. PERFORMANCE / STARTUP GATES
+===============================================================================
+
+Headless planner
+  Realistic 1 MiB multiline fixtures for each applicable family. Median planning latency <=1000 ms
+  on T480. Fail closed; do not merely print measurements.
+
+True-GTK explicit command path
+  Realistic 1 MiB multiline action including text/ViewState capture, plan, authority apply and
+  projection must complete <=3.0 s per adopted action exercised by the gate. This reuses the proven
+  G05 True-GTK responsiveness ceiling rather than inventing an aggressive new desktop threshold.
+
+Scale hostile
+  Pathological line density and 50,000/50,001 changed-span boundaries must be covered. A 10 MiB
+  transform is not promised if the inherited Undo payload/renderability authority rejects it.
+
+Startup
+  G04/G06 startup and existing regression gates remain mandatory. G09 adds no background startup
+  work and must not regress FIRST_EDITABLE/FIRST_VISIBLE baselines beyond existing gate authority.
+
+===============================================================================
+14. PRE-CANDIDATE GATES
+===============================================================================
+
+Before any desktop candidate may be declared:
+  1. live canonical Git read-only audit PASS against exact G08 published commit/tree;
+  2. isolated implementation copy only; canonical Git untouched;
+  3. full headless suite PASS;
+  4. G09 focused semantic/architecture tests PASS;
+  5. G04/G05/G06/G07/G08 regressions PASS as required by current topology;
+  6. G09 True-GTK hostile gate PASS;
+  7. 1 MiB performance budgets PASS;
+  8. shortcut/Cinnamon collision audit PASS including Alt+Up/Alt+Down;
+  9. topology + bytecode + canonical-doc-cap + Lightweight Budget gates PASS;
+ 10. product runtime mutation tripwire NO;
+ 11. exact source/product tree identity frozen;
+ 12. only then request explicit user authorization for Candidate R1.
+
+===============================================================================
+15. GOVERNANCE
+===============================================================================
+
+This freeze consumes NO candidate attempt.
+Implementation requires explicit user authorization.
+Candidate R1 later requires a separate explicit authorization after pre-candidate qualification.
+Maximum valid desktop candidates remains 2.
+After any valid product FAIL/STOP, perform the binding source-first Graphium + pertinent mature-source
+failure re-audit before repair. Diagnostic probes remain NON-CANDIDATE and consume no attempt.
+No Git mutation/publish without separate explicit authorization.

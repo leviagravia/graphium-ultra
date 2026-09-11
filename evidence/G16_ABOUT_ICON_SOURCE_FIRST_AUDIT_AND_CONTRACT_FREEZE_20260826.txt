@@ -1,0 +1,206 @@
+GRAPHIUM G16 — ABOUT ICON CORRECTIVE CLOSURE
+SOURCE-FIRST MATURE-SOURCE AUDIT AND CONTRACT FREEZE
+Date: 2026-08-26
+Classification: POST-G15 PRODUCT/ORACLE GAP
+Implementation: NOT STARTED
+Git mutation: NO
+Candidate: NO
+
+1. CANONICAL BASELINE
+G15 is CLOSED / CERTIFIED / PUBLISHED / CANONICALLY CONVERGED.
+Published product commit:
+  16b645ed653be5b44efa8721db11cca63f0633bd
+Published product tree:
+  e433758d1d68ef5bea6528e15e65d786e0679d31
+Published product subtree:
+  1f63eca6724b379abab8e8d534667723e57276f6
+Post-publication governance commit:
+  15ae13fa153d77db74470d5718e8ab9bbbb5708c
+Post-publication governance tree:
+  0bb9335c717f371481c752818c5f83fdb9cb16f3
+Version:
+  0.0.15
+
+G16 must not rewrite G15 history. It is a new corrective line.
+
+2. USER-VISIBLE FAILURE
+The user-provided screenshot of Help > About shows a tiny generic/missing-image
+symbol rather than the Graphium application logo.
+
+3. EXACT GRAPHUIUM SOURCE CAUSE
+graphium/adapters/gtk/dialogs.py creates Gtk.AboutDialog and sets program name,
+version, comments, authors, copyright, GPL license and repository, but does not
+set either logo or logo-icon-name.
+
+graphium/adapters/gtk/application.py correctly establishes the Graphium
+application-icon authority:
+  APPLICATION_ICON_NAME = io.github.leviagravia.Graphium
+and sets:
+  Gtk.Window.set_default_icon_name(APPLICATION_ICON_NAME)
+plus a repo-local default icon list for source runs.
+
+However, GtkAboutDialog's logo-icon-name property defaults to "image-missing";
+logo-icon-name overrides logo. Therefore relying on the unset About properties
+does not reliably project the application's default icon.
+
+4. PREVIOUS ORACLE DEFECT
+G15-S5 release test explicitly forbade:
+  set_logo_icon_name
+  set_logo(
+  APPLICATION_ICON_NAME
+in dialogs.py, assuming implicit default-window inheritance was sufficient.
+
+The T480 probe then reported:
+  ABOUT_APPLICATION_LOGO=PASS size=16x16
+
+That assertion was insufficient: it proved only that a pixbuf existed, not that
+the pixbuf was Graphium's logo. The screenshot demonstrates that the accepted
+16x16 pixbuf was the missing-image/default placeholder.
+
+Classification:
+  G15_S5_ORACLE_FALSE_POSITIVE=YES
+  G15_PRODUCT_HISTORY_REWRITE=NO
+  G16_CORRECTIVE_LINE_REQUIRED=YES
+
+5. MATURE-SOURCE COMPARISON
+
+Mousepad 0.7.0:
+  gtk_show_about_dialog(...,
+    "logo-icon-name", MOUSEPAD_ID,
+    ...)
+Directly projects the application icon identity in About.
+
+Leafpad:
+  gtk_show_about_dialog(...,
+    "logo-icon-name", PACKAGE,
+    ...)
+Direct explicit About logo identity.
+
+L3afpad:
+  gtk_show_about_dialog(...,
+    "logo-icon-name", PACKAGE,
+    ...)
+Direct explicit About logo identity.
+
+GNOME Text Editor:
+  adw_show_about_dialog(...,
+    "application-icon", PACKAGE_ICON_NAME,
+    ...)
+Direct explicit application-icon projection.
+
+FeatherPad:
+  About dialog explicitly sets the main icon pixmap at 64x64.
+  Its main window also uses the FeatherPad application icon with theme/resource
+  fallback.
+
+Mature conclusion:
+  Explicit About logo projection is normal mature behavior.
+  Graphium's S5 implicit-fallback assumption is rejected.
+
+6. ADOPT / ADAPT / REJECT
+
+ADOPT:
+- explicit About application-logo projection;
+- same canonical Graphium application icon identity;
+- a visible dialog-sized logo;
+- separate verification of source-run and installed/theme projection.
+
+ADAPT:
+- Graphium must preserve its existing two-mode icon authority:
+  a) installed/theme icon name when the Graphium hicolor icon is available;
+  b) already-loaded default Graphium icon list for repo/source runs.
+- Prefer the exact hand-tuned 48x48 Graphium pixbuf for source fallback.
+- In installed mode, use APPLICATION_ICON_NAME through the GTK icon theme.
+
+REJECT:
+- second About-specific SVG;
+- copying an icon into graphium/adapters/gtk;
+- About-specific filesystem path to data/icons;
+- new resource framework/GResource;
+- new dependency;
+- network lookup;
+- accepting any non-null pixbuf as a logo oracle;
+- accepting image-missing;
+- accepting a 16x16 placeholder as sufficient visual proof.
+
+7. FROZEN G16 CONTRACT
+
+G16 scope is only About icon corrective closure plus required tests/evidence and
+serial release identity.
+
+Runtime owner:
+  graphium/adapters/gtk/dialogs.py
+
+Existing identity authority:
+  graphium/product.py::APPLICATION_ICON_NAME
+
+Existing application bootstrap remains authoritative:
+  graphium/adapters/gtk/application.py
+
+About behavior:
+1. Help > About explicitly projects Graphium's existing application icon.
+2. If the installed icon theme resolves APPLICATION_ICON_NAME, About uses that
+   same named identity.
+3. If the named theme icon is unavailable during repo/source execution, About
+   reuses the already-loaded default Graphium icon list and selects the exact
+   48x48 hand-tuned icon.
+4. No second icon asset/path/authority is introduced.
+5. All existing About metadata remains unchanged.
+6. No editor/document behavior changes.
+
+Expected serial version after implementation/certification:
+  0.0.16
+
+8. REQUIRED PERMANENT ORACLES
+
+Static/release:
+- About explicitly projects the existing Graphium icon authority.
+- dialogs.py contains no .svg path and no About-specific asset.
+- no image-missing literal is adopted as product identity.
+- no new resource framework/dependency/module.
+- existing five-icon hicolor set remains unchanged.
+- metadata/license/repository unchanged except serial VERSION when appropriate.
+
+True-GTK source-run:
+- isolate icon-theme environment so a prior Graphium installation cannot make
+  the test pass accidentally;
+- About logo must be the exact 48x48 Graphium source icon, not a generic pixbuf;
+- pixel/content identity must be compared with the canonical 48x48 Graphium
+  asset;
+- logo must not be 16x16 image-missing.
+
+True-GTK installed/staged:
+- install the exact package projection into isolated XDG/data roots;
+- icon theme must resolve io.github.leviagravia.Graphium;
+- About must project that named Graphium identity;
+- rendered logo must be visibly dialog-sized and non-placeholder.
+
+Regression:
+- full permanent suite;
+- application/window icon S1 behavior unchanged;
+- LICENSE/About metadata S5 behavior unchanged.
+
+9. LIGHTWEIGHT BUDGET
+
+New runtime modules: 0
+New dependencies: 0
+New config keys: 0
+New subprocesses: 0
+New threads: 0
+New icon assets: 0
+New icon authorities: 0
+New manual test requirement target: 0, if True-GTK can prove exact logo identity.
+
+10. STATUS
+
+G16_SOURCE_FIRST_MATURE_AUDIT=PASS
+G16_ROOT_CAUSE=GTK_ABOUT_LOGO_ICON_NAME_DEFAULT_IMAGE_MISSING
+G16_PREVIOUS_ORACLE_FALSE_POSITIVE=CONFIRMED
+G16_CONTRACT=FROZEN
+G16_IMPLEMENTATION_STARTED=NO
+G16_CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+
+NEXT PERMISSIBLE STEP:
+G16 NON-CANDIDATE RED->GREEN implementation, only after explicit authorization.

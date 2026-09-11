@@ -1,0 +1,73 @@
+GRAPHIUM G06 — SOURCE AUDIT
+Date: 2026-08-15
+Baseline: published G05 commit a9083daf22ab23cf6cd20841be643510e35d700d
+Baseline tree: 12d55249263e006cc68fa304f3c3cc2a9ef73acb
+Work item: G06 — View Menu Core / Compact Status / Lightweight Presentation
+
+SCOPE UNDER AUDIT
+-----------------
+G06 is restricted to presentation capabilities that preserve the G04/G05 document,
+history, lifecycle, search, topology and performance contracts. The frozen product
+surface is: Status Bar, Line Numbers, Word Wrap, Font, Zoom In/Out/Reset and Full
+Screen. Appearance remains G10. Toolbar is REJECT v1.
+
+BASELINE FINDINGS
+-----------------
+1. G05 has one Gtk.TextView per process/window/document and no toolbar/sidebar/tabs.
+2. G04 renderer-safety guards are connected to native buffer mutation signals and must
+   remain untouched by View operations.
+3. G05 SearchBar is lazy; G06 may not turn View into an eager background subsystem.
+4. Saved/Modified remains state-ID authority; View operations must not allocate or move
+   document history state.
+5. G03 GuardedFileWriter is the sole document-target mutation authority. A separate
+   product-local XDG settings file is permissible only if it cannot write documents.
+
+G06 ARCHITECTURE
+----------------
+- graphium/application/view_settings.py
+  GTK-free immutable persistent settings model and one controller authority.
+  Persistent: Word Wrap, Line Numbers, Status Bar, Font family/size.
+  Explicitly NOT persistent: Zoom, Full Screen.
+
+- graphium/infrastructure/view_settings_store.py
+  Product-local XDG JSON store. Load is read-only/fail-soft. Write occurs only after an
+  explicit setting change, through same-directory temporary file + fsync + os.replace.
+  It imports no document persistence authority and is not a document writer.
+
+- graphium/application/view_status.py
+  Cheap projection only: current 1-based line/column + already-known representation
+  metadata + Saved/Modified. No text scan, word count or character count.
+
+- graphium/adapters/gtk/editor_view.py
+  Thin Gtk.TextView subclass. Native LEFT border window for line numbers; only visible
+  logical lines are traversed. Base Font + transient Zoom share a view-local CSS
+  provider. No GtkSourceView, parallel scroller, index or background worker.
+
+- graphium/adapters/gtk/window.py
+  View command projection and compact status. Direct settings persist before UI state is
+  changed. Font chooser persists before application. Zoom and Full Screen remain
+  transient. Cursor-position status refresh reads only the insert iterator and session
+  metadata.
+
+WRITER BOUNDARY REFINEMENT
+--------------------------
+G03_SINGLE_PHYSICAL_DOCUMENT_WRITER=GuardedFileWriter
+G06_XDG_CONFIG_STORE=JsonViewSettingsStore
+DOCUMENT_NAMESPACE_AUTHORITY_CROSSED=NO
+The historical phrase “single physical writer” is interpreted according to its G03
+contract: one writer authority for document targets. G06 does not pretend that config
+persistence is not filesystem mutation; it confines that mutation to product-local XDG
+view.json and verifies separation statically.
+
+RETAIN / REJECT
+---------------
+RETAIN: G04 native DeltaHistory, renderability guards, topology, FIRST_EDITABLE; G05
+Search authority and lazy SearchBar.
+REJECT: GtkSourceView migration, toolbar, live Statistics, Appearance early, background
+view workers/indexes, persistent Zoom/Fullscreen, duplicate View settings in Preferences.
+
+AUDIT DECISION
+--------------
+SOURCE_AUDIT=PASS
+G06_IMPLEMENTATION_BOUNDARY=THIN_PRESENTATION_ONLY
+GIT_MUTATION=NO

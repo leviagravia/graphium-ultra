@@ -1,0 +1,24 @@
+FEATHERPAD DIRECT SOURCE RECEIPT
+
+Input archive:
+  FeatherPad-master(2).zip
+SHA-256:
+  1651a43c8541d6921f6ece30a82bcb38e1341fbee2e17be9081468fe6ea548ac
+ZIP integrity:
+  PASS
+Extracted regular files:
+  188
+
+Direct G07 source evidence used:
+  featherpad/config.cpp
+    lines 292-300: recentFilesNumber defaults/bounds; recent list load/dedup/truncate
+    lines 302-303: saveLastFilesList is a distinct setting from recent history
+    lines 670-678: addRecentFile removes duplicate, prepends MRU, truncates
+  featherpad/fpwin.cpp
+    lines 631-649: Open Recently menu and Clear Recent wiring
+    lines 1795-1839: lazy menu projection and clear/add behavior
+    lines 2256-2265 and related symlink branches: QFileInfo symlink/canonical handling
+
+Disposition:
+  Direct source is now available; preserved prior FeatherPad-derived evidence is no longer
+  the only FeatherPad basis for G07.

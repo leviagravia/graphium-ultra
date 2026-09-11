@@ -1,0 +1,177 @@
+GRAPHIUM G07 R1 — STARTUP FAILURE-SPECIFIC DIRECT MATURE-SOURCE RE-AUDIT
+Date: 2026-08-16
+Baseline: published G06 commit aae14ef000ea44674cb9bbb7b3a87e3af00c0b18
+R1 pre-repair source tree: 65783ed4b5638f5c2edc591e5e34698ef599662d
+Probe class: NON-CANDIDATE; candidate attempt consumed: NO
+Internet/web evidence: NOT USED
+
+===============================================================================
+1. FAILURE OBSERVATION
+===============================================================================
+T480 NON-CANDIDATE qualification passed all functional/architecture lanes:
+  304/304 tests PASS
+  STRICT_GATES PASS
+  G04/G05/G06 True-GTK regressions PASS
+  G07 True-GTK real-App PASS
+  G06 View performance PASS
+  G07 Statistics performance PASS
+  topology/shortcut/search performance PASS
+
+The run stopped only at startup self-regression:
+  FIRST_EDITABLE 5KiB: baseline 231.208 ms, R1 365.243 ms, limit 306.208 ms => FAIL
+  FIRST_VISIBLE 1MiB:   baseline 273.236 ms, R1 398.991 ms, limit 348.236 ms => FAIL
+  G06_STARTUP_REGRESSION_GATE=FAIL
+
+Against the directly certified G06 benchmark reference, R1 common FIRST_VISIBLE deltas were:
+  empty  +7.736 ms  (+2.9%)
+  5KiB  +92.524 ms (+35.8%)
+  1MiB +106.086 ms (+36.2%)
+  10MiB +93.485 ms (+14.8%)
+
+Exact Graphium FIRST_EDITABLE deltas versus certified G06 were:
+  empty  +16.500 ms
+  5KiB +117.171 ms
+  1MiB +119.005 ms
+  10MiB +125.475 ms
+
+The near-constant non-empty-file penalty strongly implicates a new fixed post-Open operation rather than text-size-dependent parsing/rendering.
+
+===============================================================================
+2. GRAPHUM R1 SOURCE CAUSE
+===============================================================================
+graphium/application/file_lifecycle.py:
+  successful Open installs the document and then calls _touch_recent_nonfatal();
+  _touch_recent_nonfatal() synchronously calls RecentFilesController.touch().
+
+graphium/application/recent_files.py:
+  touch() constructs the bounded MRU and calls store.save(candidate) before returning.
+
+graphium/infrastructure/recent_files_store.py, R1 pre-repair:
+  save() wrote a temporary 0600 JSON, then imposed BOTH:
+    os.fsync(file descriptor)
+    os.fsync(parent directory descriptor)
+  before/after os.replace().
+
+Those are document-grade crash-durability barriers placed on every successful file Open and binding-changing Save As, despite Recent being explicitly non-authoritative convenience state.
+
+===============================================================================
+3. DIRECT MATURE-SOURCE FALSIFICATION AUDIT
+===============================================================================
+A. FeatherPad — POSITIVE MODEL FOR SEPARATING MRU MUTATION FROM DURABLE CONFIG WRITE
+Source: featherpad/config.cpp, Config::addRecentFile() around lines 670-679.
+  The function only mutates recentFiles_ in memory: removeAll(), prepend(), trim to cap.
+Source: featherpad/fpwin.cpp, FPwin::addRecentFile() around lines 1836-1845.
+  Open/Save paths call Config::addRecentFile(); no config-file durability barrier is performed there.
+Source: featherpad/singleton.cpp around lines 94-103.
+  config_.writeConfig() is called at singleton teardown.
+Source: featherpad/config.cpp, Config::writeConfig() around lines 414-529.
+  recentFiles_ is written with Settings/QSettings as part of configuration persistence.
+Source: featherpad/config.h around lines 33-47.
+  Settings::setValue() explicitly avoids redundant writes: source comment says
+  "Prevent redundant writings!" and returns when the stored value is unchanged.
+
+Consequence for Graphium:
+  Mature FeatherPad treats Recent as convenience/configuration state, not as a document durability transaction. Graphium need not copy shutdown-only persistence, but it must not elevate MRU to document-save durability.
+
+B. GNOME Text Editor — POSITIVE MODEL FOR IN-MEMORY 'SEEN' BEFORE DEFERRED PERSISTENCE
+Source: src/editor-session.c, _editor_session_document_seen() around lines 2172-2201.
+  A seen file is copied into self->seen with a visited timestamp; then session is marked dirty.
+Source: src/editor-session.c, _editor_session_mark_dirty() around lines 2471-2486.
+  Persistence is not performed inline with document-seen; when auto-save is enabled it is scheduled later.
+Source: src/editor-session.c, editor_session_update_recent_worker() around lines 1104-1202 and
+editor_session_save_async() around lines 1255-1315.
+  recent bookmark I/O occurs in the session-save path/worker rather than the immediate seen operation.
+
+Consequence for Graphium:
+  The mature architecture confirms that 'document became recent' and 'recent state reached storage' are separate concerns. Graphium rejects the timer/worker mechanism because G07 explicitly forbids it, but the separation falsifies the need for inline document-grade durability.
+
+C. Mousepad 0.7.0 — RECENT ADD AFTER SUCCESSFUL OPEN, NO APPLICATION-OWNED FSYNC BARRIER
+Source: mousepad/mousepad-window.c around lines 2197-2205.
+  After the document is added to the window, Mousepad calls mousepad_history_recent_add().
+Source: mousepad/mousepad-history.c around lines 154-201.
+  Recent metadata is handed to gtk_recent_manager_add_full(). The product source does not perform an explicit file fsync + directory fsync transaction in the Open path.
+
+Consequence for Graphium:
+  Post-success Open is a sound mutation point, but the mature implementation does not attach its own document-grade durability barrier to that point.
+
+D. gedit — RECENT ADD ON LOAD/SAVE COMPLETION, NO APPLICATION-OWNED FSYNC BARRIER
+Source: gedit/gedit-tab.c around lines 1042-1050 and 1503-1510.
+  Successful load/save completion calls _gedit_recent_add().
+Source: gedit/gedit-window.c around lines 1127-1162.
+  _gedit_recent_add() delegates to gtk_recent_manager_add_full(); no gedit-owned fsync pair is performed.
+
+Consequence for Graphium:
+  Again, success-boundary MRU mutation is mature, but document-grade persistence barriers are not part of application-level Recent semantics.
+
+E. NEdit — CONTRAST MODEL: SYNCHRONOUS MRU WRITE, BUT NOT DOCUMENT-GRADE DURABILITY
+Source: source/file.c around lines 240-277.
+  After successful open and UI updates, AddToPrevOpenMenu(fullname) is called.
+Source: source/menu.c, AddToPrevOpenMenu() around lines 4501-4557.
+  NEdit refreshes the list, updates MRU, then calls WriteNEditDB() synchronously.
+Source: source/menu.c, WriteNEditDB() around lines 4852-4906.
+  It uses fopen/fprintf/fclose. There is no fsync(file)+fsync(directory) durability barrier.
+
+Consequence for Graphium:
+  Even the mature contrast that persists synchronously does not justify R1's stronger durability cost. Graphium can preserve synchronous success/failure semantics while using atomic convenience-state replacement without fsync barriers.
+
+F. Leafpad and L3afpad — MINIMALISM NEGATIVE ORACLE
+Direct source search finds no Recent-files subsystem in these strict lightweight editors.
+
+Consequence for Graphium:
+  Recent must earn its cost. A fixed ~100 ms Open penalty for a convenience absent from the minimal reference editors fails Graphium's Lightweight Budget.
+
+===============================================================================
+4. ADOPT / ADAPT / REJECT
+===============================================================================
+ADOPT:
+  successful Open / binding-changing Save As remain the MRU mutation points;
+  bounded path-only MRU remains lazy and non-authoritative;
+  atomic replacement and file mode 0600 remain required.
+
+ADAPT:
+  Recent JSON persistence remains synchronous in G07 R1 repair so existing failure semantics do not change,
+  BUT it is convenience-state atomicity, not document crash durability:
+    write complete temp file -> close -> os.replace
+  Temp creation at 0600 makes the replaced final file 0600.
+
+REJECT:
+  os.fsync(recent temp file)
+  os.fsync(recent parent directory)
+  any document-grade durability barrier on Recent
+  background thread
+  timer/debounce service
+  GtkRecentManager/global XBEL dependency
+  session manager
+  weakening GuardedFileWriter document-save durability
+
+===============================================================================
+5. CONTRACT CLARIFICATION
+===============================================================================
+The frozen user-visible G07 contract does not change. "XDG_STATE_ATOMIC_JSON_0600" requires complete atomic replacement and private file mode; it never required fsync durability. Recent remains non-authoritative convenience state and persistence failure remains nonfatal.
+
+New explicit architecture marker:
+  G07_RECENT_DURABILITY=ATOMIC_CONVENIENCE_NO_FSYNC
+
+This marker applies ONLY to Recent convenience state. It does not weaken G03 GuardedFileWriter, Save, Save As, Save a Copy or Save Version Copy.
+
+===============================================================================
+6. REPAIR DECISION
+===============================================================================
+Remove only Recent-store fsync barriers and redundant post-create chmod operations from the Open/Save-As critical path. Preserve:
+  same MRU controller
+  same lazy load
+  same exact path identity rules
+  same JSON schema/cap
+  same 0600 temp creation
+  same atomic os.replace
+  same synchronous persistence error propagation to Recent controller
+  same nonfatal lifecycle handling
+  same one-writer document authority
+
+Add strict source gate forbidding os.fsync in graphium/infrastructure/recent_files_store.py.
+Re-run all 304+ regressions locally and then a fresh T480 NON-CANDIDATE startup qualification before declaring any desktop candidate.
+
+MATURE_REAUDIT=PASS
+CONFIRMATION_BIAS_COUNTERMEASURE=PASS
+R1_STARTUP_REPAIR=AUTHORIZED_BY_EXISTING_NEXT_STEP
+CANDIDATE_ATTEMPT_CONSUMED=NO

@@ -1,0 +1,151 @@
+GRAPHIUM G09 — DIRECT MATURE-SOURCE AUDIT
+Date: 2026-08-20
+Method: direct source from handover archives; no web substitution
+
+Archive identities from handover SHA256SUMS.txt
+  Mousepad 0.7.0  e86c59feb08126d4cace368432c16b2dee8e519aaca8a9d2b409ae1cdd200802
+  FeatherPad      1651a43c8541d6921f6ece30a82bcb38e1341fbee2e17be9081468fe6ea548ac
+  gedit           957142746934474b84457b6fb171fb1ffcc0942facf7131f9c3c6f492247737d
+  NEdit           f9676c1fedeb2fe92ec24eed7321b5d4472846a695b927a9248c729c249752f6
+  Parchment       64b4b194707db70538d861a48b708ef64b243ea5ab92c671ec8223e349e3919f
+  Leafpad         78bae120104965d841097ba438aa02b92efa349f2e9989b5026c1e36dd6b3b6e
+  L3afpad         0bc6cbb96fbf37eaf961a73d2a2c5fbcd9682a4d5bf2d7112eb1bfed0b04fdb6
+  GNOME Text Ed.  b7e1c075e40929765dfebb68297d9100eb4fb3b7fe71cec53d070cfc451c5555
+  Airpad          e4fd59e1d9ef2c78bdd76190a0c1f4a33aa12ef542c6d0f7ee3a8ffeb594be33
+  Janus           b14f7596734c835ffc6e721be6af3a7030e234e2783fd8a8c46750a57def5a7f
+
+===============================================================================
+1. MOUSEPAD 0.7.0 — STRONGEST OPERATIONAL COMPARATOR
+===============================================================================
+
+mousepad/resources/gtk/menus-common.ui:261-325
+  Mousepad places case conversions and Strip Trailing Spaces below Edit in a Convert submenu, and
+  line movement below Edit in a Move submenu. This is direct evidence for grouping explicit text
+  transformations under Edit rather than adding a top-level Format family.
+
+mousepad/mousepad-view.c:1292-1357
+  Strip Trailing Spaces:
+    - selection => selected line range;
+    - no selection => whole document;
+    - strips only literal space/TAB at line ends;
+    - one GTK user action.
+  This gives Graphium a narrow, explainable explicit command model. Graphium ADAPTS endpoint-at-
+  line-start scope to mean "selected characters touch the preceding line only", preventing an
+  unselected following line from being modified merely because the selection ends at column 0.
+
+mousepad/mousepad-view.c:1362-1400
+  Duplicate:
+    - selection => duplicate selection;
+    - no selection => duplicate current logical line;
+    - explicitly handles the final line without EOL;
+    - one user action.
+  Graphium adopts the selection/current-line distinction but freezes clearer postconditions: insert
+  the duplicate AFTER the source and select/place the caret in the new duplicate.
+
+mousepad/mousepad-view.c:551-628
+  Move Lines:
+    - operates on selected/current lines;
+    - preserves line-relative start/end character offsets;
+    - records which end owns the insertion cursor, preserving selection direction;
+    - has explicit last-empty-line handling;
+    - uses one user action.
+  This falsifies a naive string swap that ignores final-line and selection-affinity semantics.
+  Graphium ADAPTS the semantics to pure delta planning and explicitly treats the zero-length terminal
+  sentinel created solely by a final LF as a non-movable neighbor.
+
+mousepad/mousepad-application.c:655-656
+  Default accelerators are Alt+Up and Alt+Down for line movement. Graphium adopts those two only.
+
+===============================================================================
+2. GEDIT — SELECTION-ONLY CASE MODEL
+===============================================================================
+
+plugins/changecase/gedit-changecase-plugin.c:65-113,171-210
+  Upper/lower conversion operates only when GtkTextBuffer has a selection; otherwise it returns.
+  The whole operation is one GTK user action.
+
+plugins/changecase/gedit-changecase-plugin.c:143-169
+  Title Case requires explicit GTK word-boundary decisions and per-character title/lower mappings.
+  It is not merely "uppercase the first character after whitespace".
+
+Graphium consequence
+  Selection-only Uppercase/Lowercase is a mature and low-surprise contract. Title Case remains
+  deferred because word boundaries and language behavior create a larger semantic promise.
+
+===============================================================================
+3. FEATHERPAD — CASE VALUE, TITLE-CASE COMPLEXITY, SAVE CLEANUP NEGATIVE ORACLE
+===============================================================================
+
+featherpad/fpwin.cpp:3817-3895
+  Uppercase/Lowercase are explicit selection operations. Start Case is substantially more complex:
+  it expands to word edges, applies custom token/word handling, and contains a large-selection guard.
+  This reinforces DEFER for Title Case in a lightweight trust editor.
+
+featherpad/fpwin.cpp:3219-3250
+  FeatherPad can remove trailing spaces on Save and needs format exceptions: Markdown/Fountain may
+  intentionally use two trailing spaces; LaTeX has its own special treatment.
+
+Graphium consequence
+  FeatherPad is a NEGATIVE oracle for implicit cleanup. Graphium must never hook G09 transforms into
+  Open/Save. Trim Trailing Spaces is explicit user intent only.
+
+featherpad/textedit.cpp:962-1058
+  Ctrl+Shift+Up/Down line movement preserves anchor/position block offsets and selection direction in
+  one edit block, with explicit first/last block handling. This independently supports Mousepad's
+  requirement that line movement preserve caret/selection geometry rather than merely text order.
+
+===============================================================================
+4. NEDIT — REFLOW IS A HIDDEN SUBSYSTEM
+===============================================================================
+
+source/menu.c:748-753
+  Lower-case, Upper-case and Fill Paragraph are explicit Edit commands.
+
+source/shift.c:532-704,727-769 plus help_data.h:714-786
+  Fill Paragraph contains paragraph-boundary discovery, indentation policy, tab handling, margins,
+  multiple-paragraph behavior and explicit selection modes. NEdit documentation distinguishes no
+  selection, ordinary selection and rectangular selection behavior.
+
+Graphium consequence
+  A simplistic split/join "Reflow Paragraph" would be a destructive half-model. DEFER it rather than
+  importing a hidden formatting subsystem into G09.
+
+===============================================================================
+5. PARCHMENT — CONTENT-NEUTRALITY NEGATIVE ORACLE
+===============================================================================
+
+parchment.lua:1310-1366
+  Parchment removes trailing whitespace during file read and again during write, and normalizes
+  trailing newlines as part of its persistence philosophy.
+
+Graphium consequence
+  This behavior conflicts with Graphium's preserve-by-default trust contract. Explicit transformation
+  commands must remain completely disconnected from ordinary Open/Save serialization.
+
+===============================================================================
+6. LEAFPAD / L3AFPAD / GNOME TEXT EDITOR / AIRPAD / JANUS
+===============================================================================
+
+Direct priority-source searches found no comparably central explicit transformation family needed for
+this G09 scope. Their value here is a negative scope oracle: a quick editor remains credible without
+turning transformations into a large platform. Therefore every added Graphium action must earn its
+surface and cannot be justified by feature-count parity.
+
+===============================================================================
+7. FALSIFICATION RESULTS
+===============================================================================
+
+FALSIFIED
+  - "Title Case is just another cheap case conversion."
+  - "Reflow Paragraph is just whitespace replacement."
+  - "Trailing-space cleanup can safely happen on Save."
+  - "Move Lines can ignore selection direction/final-line semantics."
+  - "A Format top-level menu is needed for these actions."
+  - "GtkSourceView is required to obtain mature transform behavior."
+
+SUPPORTED
+  - Selection-only Uppercase/Lowercase.
+  - Duplicate selected text or current logical line.
+  - Move touched/current lines one line up/down with exact view-state preservation.
+  - Explicit-only Trim Trailing Spaces over selected lines or whole document.
+  - Compact grouping under Edit.

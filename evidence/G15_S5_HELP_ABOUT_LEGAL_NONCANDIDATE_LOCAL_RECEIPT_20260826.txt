@@ -1,0 +1,67 @@
+GRAPHIUM G15-S5 HELP / ABOUT / LEGAL CLOSURE — LOCAL NON-CANDIDATE RECEIPT
+Date: 2026-08-26
+
+Entry authority:
+- G15-S4 Transform Text Shortcuts TRUE-GTK PASS / CLOSED on T480.
+- Candidate=NO; attempt consumed=NO; Git mutation=NO.
+
+Frozen implementation:
+- one top-level LICENSE authority;
+- explicit GPL-3.0-or-later project grant;
+- exact mature GNU GPLv3 body from FeatherPad COPYING;
+- AUTHOR=leviagravia@zohomail.eu;
+- COPYRIGHT=Copyright © 2026 leviagravia;
+- LICENSE_ID=GPL-3.0-or-later;
+- repository URL/label unchanged;
+- standard Gtk.AboutDialog metadata only;
+- Gtk.License.GPL_3_0;
+- no About-specific icon authority; reuse G15-S1 default application/window icon;
+- installer projects exactly one LICENSE copy into private installed root;
+- User Guide intro reflowed and one-sentence Latin graphium note added;
+- Help topology unchanged: User Guide / Keyboard Shortcuts / About.
+
+GPLv3 body authority:
+SHA256(FeatherPad mature COPYING)=0ae0485a5bd37a63e63603596417e4eb0e653334fa6c7f932ca3a0e85d4af227
+G15_S5_GPLV3_BODY_BYTE_EXACT=PASS
+
+Focused RED baseline:
+- expected failures on missing LICENSE, product legal metadata, About metadata, installed LICENSE and User Guide wording.
+- one RED/initial-GREEN oracle expected a whitespace-spanning GPL grant on one physical line; contract itself wraps that sentence. Test oracle was corrected to normalize whitespace; LICENSE product bytes were not changed.
+
+Focused GREEN:
+- tests.release.test_help_about_legal_closure = 11/11 PASS.
+
+Pre-authority permanent qualification:
+Behavioral 190/190 PASS
+Integration 176/176 PASS
+Packaging/Release 40/40 PASS
+Total = 406/406 PASS
+
+Failure-specific post-authority note:
+- one full-selftest run did not complete within the local execution limit after HunspellPipe integration errors.
+- graphium/infrastructure/hunspell_session.py, graphium/adapters/gtk/spelling.py,
+  tests/integration/test_spellcheck_external.py and tests/integration/test_hunspell_dictionary_selection.py
+  are byte-identical to the qualified G15-S4 parent.
+- HunspellPipeTests then passed 9/9 on both G15-S4 baseline and G15-S5 working source.
+Classification: transient local timing / unrelated pre-existing Hunspell test sensitivity; PRODUCT_FAIL=NO.
+No Hunspell source, timeout or test semantics were changed.
+
+Post-audit full qualification:
+Behavioral 190/190 PASS
+Integration 176/176 PASS
+Packaging/Release 40/40 PASS
+Total permanent authorities = 406/406 PASS
+
+Scope/budget:
+- product metadata lines only in graphium/product.py;
+- standard About metadata only in graphium/adapters/gtk/dialogs.py;
+- one installer copy operation;
+- no new product module/dependency/config/persistence/thread/subprocess/network/custom About/license viewer;
+- version remains 0.0.14.
+
+G15_S5_LOCAL_QUALIFICATION=PASS
+G15_S5_TRUE_GTK=PENDING
+MANUAL_TESTS_PLANNED=0
+CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO

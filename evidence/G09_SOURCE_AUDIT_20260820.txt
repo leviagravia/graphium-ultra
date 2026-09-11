@@ -1,0 +1,139 @@
+GRAPHIUM G09 — READ-ONLY PUBLISHED G08 SOURCE AUDIT
+Date: 2026-08-20
+Published baseline commit: 5d1c342eafbff8b4b38f0656e0dbc1fe315362b4
+Published baseline tree:   6535bf7d560ceaed3e31f407317fde0a8618ba47
+
+AUDIT_CLASS=READ_ONLY_NONCANDIDATE
+PRODUCT_IMPLEMENTATION_MUTATION=NONE
+GIT_MUTATION=NONE
+
+===============================================================================
+1. SOURCE AUTHORITY / IDENTITY
+===============================================================================
+
+The one-upload handover verifier proved:
+  PUBLISHED_SOURCE_TREE=PASS tree=6535bf7d560ceaed3e31f407317fde0a8618ba47 files=169 executables=19
+  G08_PUBLICATION_AUTHORITY=PASS
+
+The current sandbox does not contain /home/luciano/Projects/graphium-work, so the live canonical Git
+check is ENVIRONMENT_UNAVAILABLE here, not PASS. This audit is bound to the verified embedded exact
+published tree. The canonical read-only Git audit remains a mandatory implementation precondition.
+
+===============================================================================
+2. EXISTING PROGRAMMATIC MUTATION AUTHORITY — G05 IS THE OWNER
+===============================================================================
+
+graphium/application/native_editor.py:209-294
+  NativeEditorController.apply_prevalidated_programmatic_group() already owns the exact semantics
+  G09 needs for an explicit non-native text-changing command:
+    - expected source-state identity and stale-plan rejection (233-236);
+    - true zero-operation no-op returning the current state ID (237-238);
+    - bounded Undo payload check before GTK mutation (239-244);
+    - complete-final-text G04 renderability check before GTK mutation (245-248);
+    - history/session checkpoints (250-252);
+    - one grouped history transaction (252-276);
+    - buffer application through the buffer port, not direct window GTK mutation (267-277);
+    - exact inverse buffer rollback plus history/session checkpoint restore on failure (278-292).
+  Its own contract explicitly says no full-document snapshot is stored in history (218-224).
+
+Conclusion
+  ADOPT the G05 authority unchanged for G09. A new mutation engine, direct GtkTextBuffer mutation
+  from G09 window callbacks, or a second Undo/history platform is architecturally unjustified.
+
+===============================================================================
+3. BUFFER / VIEW POSTCONDITION AUTHORITY
+===============================================================================
+
+graphium/adapters/gtk/editor_buffer.py:94-123
+  GtkTextBufferPort.apply_operations() applies exact ReplayOperation sequences and then projects an
+  explicit ViewState. Expected DELETE text is verified before deletion; the port maintains rolling
+  inverse operations for failure rollback. ViewState contains separate insert/bound offsets, so
+  reversed selection direction is representable and must not be normalized away by G09.
+
+graphium/domain/edit_history.py:165-304
+  DeltaHistory records one explicit group, generates one fresh state ID only when deltas exist, and
+  stores before/after ViewState for exact Undo/Redo projection. Empty groups do not advance state.
+
+Conclusion
+  Every adopted G09 action must produce an immutable GTK-free plan carrying source state, source
+  text, final text, operations, before_view and target_view. Selection direction is a contract datum.
+
+===============================================================================
+4. G05 PLANNER PATTERN — REUSE THE PATTERN, DO NOT REFACTOR G05
+===============================================================================
+
+graphium/application/search.py:34-60,160-220
+  ReplacementPlan is immutable and binds source_state_id/source_text/final_text/operations and both
+  view states. Replace All caps Python-object explosion at 50,000 matches, checks Undo payload and
+  complete final renderability before application, and builds operations in offset-safe order.
+
+Graphium consequence
+  G09 should add one small GTK-free text-transform planner module following this proven pattern.
+  It should NOT extract/refactor G05 merely to obtain a shared generic plan class: changing the
+  already-certified Search path adds regression surface without product value. Similar immutable
+  plan shape is acceptable; mutation ownership remains single because application still goes through
+  NativeEditorController.apply_prevalidated_programmatic_group().
+
+===============================================================================
+5. COMMAND / MENU ARCHITECTURE
+===============================================================================
+
+graphium/application/commands.py:1-64
+  COMMANDS is explicitly the single command authority shared by menus, accelerators and Help.
+  Current top-level menu assignments are File/Edit/Search/View/Document/Help; forbidden accelerator
+  Ctrl+Alt+L remains explicit.
+
+graphium/adapters/gtk/window.py:94-173
+  Actions are generated from COMMANDS and the menu bar is generated over the exact six top-level
+  menu names. Open Recent already proves a nested submenu can remain under the same command/action
+  authority without creating a seventh top-level menu.
+
+G09 consequence
+  Six adopted actions would add excessive flat Edit density. Add exactly one nested Edit submenu,
+  "Transform Text", while preserving COMMANDS as the sole action/accelerator/Help catalog. A tiny
+  menu-routing extension is allowed; a second command registry or top-level Format menu is not.
+
+===============================================================================
+6. CURRENT ACTION AVAILABILITY
+===============================================================================
+
+graphium/application/commands.py:67-90
+  Current CommandAvailability already derives Cut/Copy/Delete from has_selection.
+
+G09 consequence
+  Uppercase and Lowercase must be enabled only for a non-empty selection. The smallest acceptable
+  change is to extend the existing projection/availability path; do not add polling, observers or a
+  persistent transformation controller. Duplicate, Move and Trim may stay enabled and return exact
+  no-op plans at semantic boundaries/no-change cases.
+
+===============================================================================
+7. SCALE / RENDERABILITY INHERITANCE
+===============================================================================
+
+graphium/application/search.py:27-31
+  G05 already caps one explicit high-density edit at 50,000 match objects.
+
+graphium/domain/edit_history.py + native_editor.py
+  Existing history payload authority remains the hard text-payload boundary.
+
+graphium/application/renderability.py
+  G04 final-text line renderability remains authoritative; G09 cannot create a document Graphium
+  would refuse to render safely.
+
+G09 freeze implication
+  Use a transform planner changed-span cap of 50,000 before materializing unbounded replay objects.
+  This is primarily relevant to Trim Trailing Spaces. The independent Undo payload and G04 final
+  renderability checks remain mandatory and fail before mutation.
+
+===============================================================================
+8. SOURCE-AUDIT CONCLUSION
+===============================================================================
+
+SOURCE_ARCHITECTURE_FINDING=G05_PROGRAMMATIC_AUTHORITY_REUSABLE
+SECOND_MUTATION_ENGINE=REJECT
+G05_REFACTOR_FOR_G09=REJECT
+PERSISTENT_TRANSFORM_CONTROLLER=REJECT
+DIRECT_WINDOW_GTK_TEXT_MUTATION=REJECT
+TOP_LEVEL_FORMAT_MENU=REJECT
+GTK_FREE_PURE_PLANNER=ADOPT
+ONE_NESTED_EDIT_SUBMENU=ADOPT

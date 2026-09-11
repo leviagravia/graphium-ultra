@@ -1,0 +1,39 @@
+GRAPHIUM G02 — DEAD / OBSOLETE CODE AUDIT
+=========================================
+Date: 2026-08-14
+
+Scope: current Graphium source and gate entry points after G01 publication.
+
+Finding 1 — obsolete work-item verifier entry points
+  VERIFY_G00.py
+  VERIFY_G01.py
+These are previous-current verifiers, not historical regression tests. Retaining multiple
+"current" verifiers would create ambiguous gate authority.
+Decision: REMOVE in G02 and replace with one rolling VERIFY_GRAPHIUM.py.
+
+Finding 2 — obsolete G00-only selftest launcher
+  bin/graphium-g00-selftest
+The general bin/graphium-selftest already exists and runs the full regression suite.
+Decision: REMOVE G00-only launcher; keep/update general launcher.
+
+Finding 3 — historical tests/evidence
+  tests/test_g00_*
+  tests/test_g01_*
+  evidence/G00_*
+  evidence/G01_*
+These remain live regression/provenance evidence and are not dead merely because the current
+work item is G02.
+Decision: RETAIN.
+
+Finding 4 — Calamus compatibility surfaces
+No runtime Calamus import or compatibility package is present in Graphium G01/G02.
+Decision: keep this invariant; do not add unused compatibility helpers.
+
+Finding 5 — stale bootstrap-only docstrings
+Small package/product docstrings still described G00 bootstrap even though G01 is published.
+Decision: normalize wording where touched; no behavioral refactor.
+
+DEAD_CODE_AUDIT=PASS
+SPECULATIVE_DELETION=NO
+HISTORICAL_REGRESSION_TESTS_RETAINED=YES
+CURRENT_VERIFIER_COUNT_TARGET=1

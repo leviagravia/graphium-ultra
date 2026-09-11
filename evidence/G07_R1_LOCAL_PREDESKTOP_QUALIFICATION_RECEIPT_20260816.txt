@@ -1,0 +1,32 @@
+Graphium G07 R1 local predesktop qualification receipt
+Date: 2026-08-16
+Baseline commit: aae14ef000ea44674cb9bbb7b3a87e3af00c0b18
+Baseline tree: c2b372082cf44280f9717045578822e7b92bef12
+
+Scope: isolated implementation qualification only. Canonical Git was not mutated.
+
+Full non-desktop verifier:
+  tests=304/304 PASS
+  STRICT_GATES=PASS
+  FINAL_PHASE=G07_NONDESKTOP_VERIFIED
+
+G07 Statistics performance (fresh-process headless, local container):
+  1 MiB median=33.191 ms, p90=36.939 ms
+  10 MiB median=406.509 ms, p90=559.885 ms
+  max RSS <=147.97 MiB
+  budgets: 1 MiB median <=1000 ms; 10 MiB median <=1500 ms; RSS <=260 MiB
+  G07_STATISTICS_PERFORMANCE=PASS
+  FINAL_PHASE=G07_STATISTICS_PERFORMANCE_PASS
+
+Real-App True-GTK:
+  NOT RUN in local build environment because PyGObject/gi is unavailable.
+  This is an environment prerequisite, not a product verdict.
+  Contract requires a fresh T480 NON-CANDIDATE qualification probe before a desktop candidate may be declared ready.
+
+Status:
+  G07_R1_IMPLEMENTATION=BUILT_ISOLATED
+  G07_LOCAL_NONDESKTOP=PASS
+  G07_LOCAL_STATISTICS_PERFORMANCE=PASS
+  G07_TRUE_GTK_T480=PENDING
+  DESKTOP_CANDIDATE=NOT_YET_DECLARED
+  GIT_MUTATION=NO_USER_REPO

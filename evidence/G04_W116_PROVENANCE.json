@@ -1,0 +1,51 @@
+{
+  "calamus_commit": "33331672f5ba8fcc6a7e1ede9ab849638579f0c7",
+  "calamus_tree": "db11fee424273c0a383145c132b645c15581b30a",
+  "decisions": {
+    "calamus_command_catalog.py": "REJECT wholesale; rebuild exact small Graphium command catalog",
+    "calamus_dialogs.py": "ADAPT Save/Discard/Cancel and chooser consent patterns; rebuild small Graphium dialogs",
+    "calamus_document_session_controller.py": "ADAPT transaction/session boundary concepts; no Calamus controller import",
+    "calamus_editor.py": "ADAPT only direct Gtk.TextView/ScrolledWindow simplicity; rebuild Graphium shell",
+    "calamus_editor_buffer_adapter.py": "ADAPT capture/restore and GTK-buffer port idea",
+    "calamus_editor_composition.py": "ADAPT explicit buffer signal composition; reject Typewriter/Calamus subsystems",
+    "calamus_file_lifecycle.py": "ADAPT pure lifecycle sequencing; Graphium uses G01-G03 authorities",
+    "calamus_menu_model.py": "REJECT wholesale; rebuild File/Edit menu only in G04"
+  },
+  "direct_sources": [
+    {
+      "file": "calamus_command_catalog.py",
+      "sha256": "687332708c5323f0639bdfc8e74f5638ed412534677e96e788fa5efcd2e647c3"
+    },
+    {
+      "file": "calamus_dialogs.py",
+      "sha256": "68a6fcc44d02c8534841ebe24bd53f69134f9b626529759bc648835e1aba4de2"
+    },
+    {
+      "file": "calamus_document_session_controller.py",
+      "sha256": "72b443c1802e20191522847c69d70596ddbea6134c7ed9128bd0e93c8e3f0e18"
+    },
+    {
+      "file": "calamus_editor.py",
+      "sha256": "8d84e828e17a965ea994d0bd6f25276ea23a4aa203c5d8a111dca119f2cff378"
+    },
+    {
+      "file": "calamus_editor_buffer_adapter.py",
+      "sha256": "12a828525f988fac25d5cd3e40e4741555e5a2435a7a3787ea281ab7df3c95c6"
+    },
+    {
+      "file": "calamus_editor_composition.py",
+      "sha256": "da573e76b67d706f3a54d9495f41b968a4706b1ce5aa8f58a3a5d1f8213f9222"
+    },
+    {
+      "file": "calamus_file_lifecycle.py",
+      "sha256": "9d1e5c014a1093278fb5ede057d664bafb73831118f32fd9f1c2689c582d6d1a"
+    },
+    {
+      "file": "calamus_menu_model.py",
+      "sha256": "6ac08303ce5300cf736a2ffda00905a8c683d79a56d5eee954b37e043d3404dc"
+    }
+  ],
+  "progenitor": "Calamus W116 published",
+  "runtime_imports_from_calamus_allowed": false,
+  "work_item": "G04"
+}

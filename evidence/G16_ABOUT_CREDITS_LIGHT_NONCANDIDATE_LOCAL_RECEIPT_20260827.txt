@@ -1,0 +1,45 @@
+GRAPHIUM G16 — ABOUT CREDITS LIGHT NON-CANDIDATE LOCAL RECEIPT
+Date: 2026-08-27
+
+TRIGGER
+User desktop validation of the pre-Candidate 0.0.16 test .deb:
+  About logo=PASS
+  About Credits Light=FAIL
+  Light Line Numbers gutter=PASS
+  Check Spelling it_IT=PASS
+  Uppercase/Lowercase shortcuts=PASS
+Manual desktop result=4/5 PASS, 1/5 PRODUCT FAIL.
+Candidate had not been declared; attempts remain 0/2.
+
+SOURCE-FIRST CLASSIFICATION
+GtkAboutDialog Credits uses an internal GtkViewport with style class .view. Graphium explicit Light projected dark label foreground but did not project this viewport background, allowing a dark system-theme background to survive. Mature-source audit rejects a custom Credits dialog or second appearance authority.
+
+RED->GREEN
+New permanent test module: tests/release/test_g16_about_credits_light.py
+RED: 2/4 FAIL exactly because dialog viewport.view was absent from both explicit palettes.
+GREEN: 4/4 PASS.
+Runtime repair: graphium/adapters/gtk/appearance.py only.
+The same existing Light/Dark editor-family background/color rule now includes:
+  dialog viewport.view
+No new CSS provider, runtime module, dependency, config key, dialog subclass, About-specific palette or dialogs.py styling logic.
+
+LOCAL QUALIFICATION
+Behavioral=190/190 PASS
+Integration authority=181/181 ADOPTED from byte-identical integration tree and unchanged Hunspell owners.
+Sandbox note: two pre-existing fake-Hunspell startup-timeout tests fail identically on both the pre-repair baseline and repaired source under current sandbox load; PRODUCT_FAIL=NO, REPAIR_DELTA_REGRESSION=NO, no Hunspell mutation performed.
+Packaging/Release=54/54 PASS
+Focused Credits release tests=4/4 PASS
+
+GITHUB README IN MO
+Complete planned public README is embedded verbatim in docs/canonical/GRAPHIUM_MEMORIA_OPERATIVA.txt.
+README_SHA256=4ecf8ea7b4cf9ea4ced9fa7c49bd86f90ca272698072fcd3c42f3b17f09e560b
+README_BYTES=7679
+Verbatim identity check=PASS
+
+STATUS
+G16_ABOUT_CREDITS_LIGHT_LOCAL_REPAIR=PASS
+G16_ABOUT_CREDITS_LIGHT_TRUE_GTK=PENDING
+G16_CANDIDATE_READINESS=BLOCKED_PENDING_TRUE_GTK
+G16_CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO

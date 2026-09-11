@@ -1,0 +1,94 @@
+GRAPHIUM G09 — ADOPT / ADAPT / REJECT / DEFER + LIGHTWEIGHT BUDGET
+Date: 2026-08-20
+Baseline: G08 published commit 5d1c342eafbff8b4b38f0656e0dbc1fe315362b4
+
+===============================================================================
+A. DECISION MATRIX
+===============================================================================
+
+ADOPT
+  - Edit -> Transform Text submenu; no seventh top-level menu.
+  - Uppercase, selection-only.
+  - Lowercase, selection-only.
+  - Duplicate Line / Selection as one context-sensitive command.
+  - Move Lines Up and Move Lines Down.
+  - Trim Trailing Spaces as an explicit command only.
+  - Alt+Up / Alt+Down for Move Lines Up/Down; no default accelerators for other G09 actions.
+  - One GTK-free immutable plan per invocation.
+  - Existing NativeEditorController.apply_prevalidated_programmatic_group() as sole mutation authority.
+  - One Undo state per actual transform; true no-op creates no state/state-ID change.
+  - Exact target ViewState including reversed-selection direction.
+  - Existing G04 final renderability and DeltaHistory payload limits before mutation.
+  - 50,000 changed-span planning cap to prevent high-density replay-object explosion.
+  - Open/Save content and representation neutrality.
+
+ADAPT
+  - Mousepad case conversions -> Python full-string Unicode upper()/lower(), not GtkSourceView and not
+    locale-specific UI preferences.
+  - Mousepad duplicate -> duplicate AFTER source; selection command selects the new duplicate; line
+    command places caret on the newly duplicated line at the same logical column.
+  - Mousepad/FeatherPad line movement -> pure bounded replacement plan, no GtkSourceView dependency;
+    preserve selection direction and line-relative endpoints; exact boundary no-op.
+  - Mature selected-lines Trim -> line scope determined by selected characters; a selection ending
+    exactly at column 0 of the following line does not implicitly include that following line.
+  - Mature line models -> final LF is preserved for ordinary moves by excluding the zero-length
+    terminal sentinel as a movable line/neighbor; genuine blank lines remain movable.
+  - Flat current Graphium Edit menu -> one compact nested Transform Text submenu because six new flat
+    actions would materially increase menu density.
+
+REJECT G09/V1
+  - Top-level Format menu.
+  - Implicit transform/cleanup on Open, Save, Save As, Save a Copy or Save Version Copy.
+  - Remove Extra Spaces: ambiguous/destructive to indentation, Markdown, prose spacing and data.
+  - GtkSourceView dependency solely for transformations.
+  - Direct GtkTextBuffer text mutation from GraphiumWindow transform callbacks.
+  - Second Undo/history/programmatic mutation authority.
+  - Refactoring certified G05 merely to share a generic plan class.
+  - Background worker/service/index/cache for transformations.
+  - Persistent transformation preferences/state.
+  - Casefold as a presentation transform; locale preference UI for casing.
+
+DEFER
+  - Title Case: word-boundary/language semantics are not cheap enough for this G09 contract.
+  - Join Lines: replacement whitespace and selection-boundary semantics need separate evidence.
+  - Reflow Paragraph: NEdit proves it implies paragraph, indentation, list/tab and width policy.
+  - Opposite/Swap Case, tabs/spaces conversion and other Mousepad Convert breadth: no G09 need.
+
+===============================================================================
+B. LIGHTWEIGHT BUDGET
+===============================================================================
+
+QUICK-EDIT VALUE: PASS
+  The adopted set addresses common small corrective edits without introducing formatting state,
+  syntax ownership or a document model beyond plain text.
+
+MENTAL-MODEL COST: PASS
+  One Edit -> Transform Text submenu with six literal actions. Case actions require a selection;
+  Duplicate and Move have one documented current-line fallback; Trim has one documented whole-doc
+  fallback. No implicit persistence-time behavior exists.
+
+PERSISTENT/BACKGROUND COST: PASS
+  Zero new persistent settings, files, databases, caches, monitors, workers, timers or services.
+
+STARTUP PATH: PASS BY CONTRACT
+  The planner module is pure Python/GTK-free and owns no startup work beyond definitions. No scan,
+  cache, transform state or file I/O occurs on startup. Candidate gates must prove no startup
+  regression; this is not assumed.
+
+ARCHITECTURE COST: PASS
+  Reuses COMMANDS, current window action projection, ReplayOperation/ViewState, G04 renderability,
+  DeltaHistory and the G05 programmatic-edit authority. Adds only pure planning semantics plus a
+  small nested-menu route and callbacks. GraphiumCore gains no persistent service authority.
+
+DUPLICATION: PASS
+  No second mutation/history/rollback/renderability platform. Similar immutable plan shape to G05 is
+  intentionally local to avoid a risky certified-Search refactor.
+
+DEPENDENCY COST: PASS
+  No GtkSourceView, ICU binding, third-party text library or new runtime dependency.
+
+SCALE COST: PASS BY FROZEN GATES
+  50,000 changed-span cap; inherited 16,000,000-character Undo payload authority; inherited G04
+  renderer line guard. Required 1 MiB planner and True-GTK responsiveness gates are fail-closed.
+
+LIGHTWEIGHT_BUDGET_GATE=PASS

@@ -1,0 +1,304 @@
+GRAPHIUM G06 — VIEW PERFORMANCE TIMEOUT RE-AUDIT
+Date: 2026-08-15
+Status: STATIC RE-AUDIT CLOSED / OLD PERFORMANCE ORACLE RETIRED / NO NEW T480 RUN
+
+FORENSIC INPUT — FIRST G06 PRODUCT CANDIDATE DESKTOP RUN
+---------------------------------------------------------
+Candidate exact source tree entering desktop qualification:
+  da8220191d063d27dc14c13711900aa4b77ad67f
+
+Observed T480 sequence before stop:
+- full non-desktop suite: 263/263 PASS;
+- strict gates: PASS;
+- fresh-process G04 True-GTK regression: PASS;
+- fresh-process G05 True-GTK Search regression: PASS;
+- fresh-process G06 True-GTK View/content-neutrality: PASS, including:
+  View actions, settings persistence, native line-number gutter, Word Wrap,
+  Font/Zoom split, Compact Status, large multiline path, modal ownership and
+  exact lifecycle boundaries;
+- fresh-process Lane 4 G06 View Performance: outer 120-second timeout;
+- manual desktop validation: NOT RUN;
+- Git mutation: NONE.
+
+The timeout therefore does not establish a functional G06 View failure. It also does not
+establish a performance PASS. The exact performance verdict remains unresolved until the
+measurement oracle is corrected and the product is measured again.
+
+CLASSIFICATION
+--------------
+G06_CANDIDATE_VIEW_PERFORMANCE_VERDICT=UNRESOLVED
+G06_PRODUCT_FUNCTIONAL_VIEW_GATE=PASS
+G06_PRODUCT_PERFORMANCE_FAIL=NOT_ESTABLISHED
+G06_PRODUCT_PERFORMANCE_PASS=NOT_ESTABLISHED
+OLD_ORACLE=RETIRED
+NEW_T480_RUN=NO
+GIT_MUTATION=NO
+
+======================================================================
+AUDIT A — WHAT THE RETIRED ORACLE ACTUALLY MEASURED
+======================================================================
+
+ASSUMPTION UNDER TEST
+Seven samples of a View action should be collected by repeatedly toggling the same live
+GtkTextView state back and forth in one process and one already-laid-out large document.
+
+CONTRADICTORY / STRESSING EVIDENCE IN THE EXACT G06 TOOL
+The retired g06_view_performance.py used benchmark_toggle():
+- one uncounted priming ON transition;
+- one uncounted priming OFF transition;
+- for each of 7 measured samples: ON transition -> full Gtk event drain -> OFF transition
+  -> full Gtk event drain.
+That is 16 action activations per toggle benchmark.
+
+It applied that pattern independently to:
+- Line Numbers on 1 MiB;
+- Word Wrap on 1 MiB;
+- Line Numbers on 10 MiB;
+- Word Wrap on 10 MiB.
+
+benchmark_zoom() repeated the same topology on the 10 MiB view:
+- Zoom In -> Reset priming;
+- then seven measured Zoom In operations, each followed by Reset.
+
+Total old Lane-4 activation count before Status work:
+- 80 View state transitions overall;
+- 48 transitions on the 10 MiB GtkTextView alone.
+
+Word Wrap and font-size/CSS changes invalidate text layout. Repeatedly alternating these
+states in one view is therefore a cumulative stress workload, not the latency of one user
+request. The outer 120-second timeout was around the whole Lane and the tool printed
+metrics only after every benchmark completed, so the stop did not identify whether the
+slow boundary was Open, Line Numbers, Word Wrap, Zoom, or cumulative repeated re-layout.
+
+DECISION
+REJECT the repeated-toggle/repeated-reset oracle for G06 interactive View latency.
+Do not weaken product budgets to accommodate this artificial workload.
+
+======================================================================
+AUDIT B — MATURE SOURCE: WORD WRAP IS ONE VIEW-STATE TRANSITION
+======================================================================
+
+SOURCE AUTHORITY
+Direct local source audit already preserved in evidence/G06_MATURE_SOURCE_AUDIT.txt.
+No web substitute is used.
+
+Leafpad / L3afpad:
+- expose Word Wrap as a direct View command adjacent to Font/Line Numbers;
+- apply the native GtkTextView wrapping state rather than a formatting/reflow subsystem.
+
+Mousepad 0.7.0:
+- mousepad_view_set_word_wrap() maps the setting to GTK_WRAP_WORD_CHAR or GTK_WRAP_NONE;
+- the product model is a typed setting/property transition on the view.
+
+Additional direct mature-source comparison previously preserved in the project's local
+source-derived authorities records the same invariant for gedit, Xed, FeatherPad,
+elementary Code and AirPad: typed persisted state -> one view projection; soft wrap is not
+hard paragraph reflow.
+
+MATURE ALTERNATIVE
+Measure one OFF->ON user transition from a known fresh state. If statistics require seven
+samples, create seven independent fresh process/view instances rather than oscillating one
+layout fourteen additional times.
+
+DECISION
+SINGLE_TRANSITION_PER_FRESH_PROCESS=ADOPT
+
+======================================================================
+AUDIT C — MATURE SOURCE: FONT/ZOOM ARE PRESENTATION APPLICATIONS
+======================================================================
+
+SOURCE AUTHORITY
+Direct source comparison preserved in 02_W64_MATURE_SOURCE_COMPARISON.md plus
+G06_MATURE_SOURCE_AUDIT.txt.
+
+Mousepad 0.7.0:
+- owns typed font-name state;
+- validates/parses Pango font description;
+- converts font presentation to CSS / GtkCssProvider;
+- provides increase/decrease/reset size actions at the view boundary.
+
+Leafpad / L3afpad:
+- isolate Font selection/application in dedicated font code;
+- refresh font-dependent presentation after one selected change.
+
+FeatherPad:
+- Config owns QFont;
+- FontDialog owns user selection/preview;
+- editor creation/window logic applies the chosen font to the editor widget.
+
+Graphium consequence:
+- the human chooser itself is not a renderer latency workload;
+- Font performance measurement replaces only chooser input with a deterministic
+  Monospace 14 selection, then measures the real Graphium Font action path:
+  persist setting -> set_base_font() -> CSS provider -> painted frame;
+- Zoom performance measures one 100% -> 110% action;
+- Font Apply and Zoom receive separate 10 MiB metrics because both can invalidate layout.
+
+The Font Apply hard budget is intentionally the same as the already-frozen 10 MiB Zoom
+budget (500 ms): both terminate at GraphiumTextView._apply_font_css(), while Font Apply
+also includes explicit settings persistence. This strengthens rather than weakens G06.
+
+DECISION
+FONT_APPLY_10M_SINGLE_TRANSITION=ADOPT
+ZOOM_10M_SINGLE_TRANSITION=ADOPT
+MAX_FONT_APPLY_10M_P90_MS=500
+BUDGETS_WEAKENED=NO
+
+======================================================================
+AUDIT D — LINE NUMBERS MUST REMAIN VIEWPORT-BOUNDED
+======================================================================
+
+SOURCE AUTHORITY
+Direct G06 mature-source audit:
+- Leafpad src/linenum.c uses GtkTextView LEFT border window and visible-line traversal;
+- L3afpad retains the same visible-logical-line model;
+- Mousepad supplies the richer GtkSourceView alternative, deliberately rejected for G06.
+
+Graphium's T480 NON-CANDIDATE line-number probe already demonstrated that the native
+LEFT-border implementation is viewport-bounded on 1 MiB and 10 MiB. Lane 4 therefore
+measures a single OFF->ON transition to first painted frame; it must not repeatedly
+rebuild/toggle the gutter in one sample process.
+
+DECISION
+LINE_NUMBERS_SINGLE_TRANSITION=ADOPT
+EXISTING_10M_P90_BUDGET_250_MS=RETAIN
+
+======================================================================
+AUDIT E — CORRECT INTERACTIVE ORACLE
+======================================================================
+
+A user requests one state transition and perceives completion when the changed editor is
+painted. Therefore the G06 latency clock is:
+
+  exact Saved fixture already open and settled
+  -> arm Gtk frame-clock after-paint observer
+  -> activate exactly ONE View action
+  -> wait for first post-transition after-paint
+  -> stop latency clock
+  -> assert requested state committed
+  -> assert exact Saved/history identity unchanged
+  -> exit worker process
+
+Open/startup time is not silently mixed into this metric; G04 FIRST_EDITABLE/FIRST_VISIBLE
+already owns startup/open performance. G06 remains responsible for the incremental cost of
+the View request itself.
+
+FIRST_POST_TRANSITION_FRAME=ADOPT
+DOCUMENT_OPEN_IS_SETUP_NOT_TRANSITION_METRIC=YES
+CONTENT_AND_HISTORY_MUTATION=FORBIDDEN
+
+======================================================================
+AUDIT F — STATISTICS WITHOUT REPEATED LAYOUT STATE
+======================================================================
+
+Protocol per scenario:
+- 1 fresh priming process, discarded from statistics;
+- 7 fresh measured processes;
+- each worker owns isolated HOME/XDG and one GraphiumApplication;
+- fixture bytes are shared read-only by the parent and verified unchanged after scenario;
+- each measured worker performs one action transition only;
+- parent aggregates median + p90 across process-independent samples;
+- RSS admission uses maximum RSS across measured workers, not a favorable median.
+
+Scenarios:
+- line-numbers-1m;
+- wrap-1m;
+- line-numbers-10m;
+- wrap-10m;
+- zoom-10m;
+- font-apply-10m;
+- status-1000-updates on 10 MiB.
+
+PRIMING_PROCESSES=1
+MEASURED_PROCESSES_PER_SCENARIO=7
+FRESH_HOME_XDG_PER_SAMPLE=YES
+SINGLE_TRANSITION_PER_FRESH_PROCESS=ADOPT
+RSS_AGGREGATION=MAX_ACROSS_MEASURED_WORKERS
+
+======================================================================
+AUDIT G — TIMEOUT OWNERSHIP AND DIAGNOSTIC PRECISION
+======================================================================
+
+The old Lane had one outer 120-second process watchdog. A future candidate may retain an
+outer Lane watchdog only as last-resort containment, but normal diagnosis moves inside the
+performance tool:
+- parent prints SCENARIO_BEGIN/PASS;
+- parent prints WORKER_BEGIN/PASS with role/index;
+- every worker subprocess has a 30-second local process timeout;
+- the post-transition frame wait has a 15-second local deadline;
+- timeout/failure names exact scenario, priming/measured role and sample index.
+
+WORKER_TIMEOUT_OWNERSHIP=LOCAL
+WORKER_TIMEOUT_SECONDS=30
+FRAME_DEADLINE_SECONDS=15
+OUTER_LANE_TIMEOUT=CONTAINMENT_ONLY
+
+======================================================================
+BUDGET FREEZE
+======================================================================
+
+Retained unchanged:
+- 10 MiB Line Numbers p90 <= 250 ms;
+- 1 MiB Word Wrap p90 <= 500 ms;
+- 10 MiB Word Wrap p90 <= 1500 ms;
+- 10 MiB Zoom p90 <= 500 ms;
+- 1000 Compact Status updates p90 <= 100 ms;
+- RSS <= 220 MiB.
+
+Added, not relaxed:
+- 10 MiB Font Apply p90 <= 500 ms.
+
+BUDGETS_WEAKENED=NO
+
+======================================================================
+CONFIRMATION-BIAS COUNTERMEASURE
+======================================================================
+
+The redesign does NOT assume Graphium is fast. It removes an oracle that asked a different
+question from normal product use, while retaining all existing admission ceilings and
+adding Font Apply. If a single fresh-process transition exceeds its budget, that is direct
+evidence for a product-performance repair; the test will not hide it behind averaging of
+state reversals or by increasing the budget.
+
+MATURE_SOURCE_REAUDIT=PASS
+CONFIRMATION_BIAS_COUNTERMEASURE=PASS
+
+======================================================================
+STATIC IMPLEMENTATION RESULT
+======================================================================
+
+Changed in audit copy only:
+- tools/g06_view_performance.py — parent/worker fresh-process microbenchmark protocol;
+- tests/test_g06_entrypoints_and_performance.py — permanent protocol/oracle checks;
+- VERIFY_GRAPHIUM.py — permanent prohibition of retired benchmark_toggle/benchmark_zoom;
+- canonical three-document authority text — performance-oracle rebaseline;
+- this evidence receipt.
+
+No file under graphium/ is intentionally changed by this re-audit.
+No new desktop candidate is built or run in this step.
+
+======================================================================
+STATIC CLOSURE — REDESIGNED LANE 4
+======================================================================
+
+Final static qualification after the protocol redesign:
+- full non-desktop suite: 266/266 PASS;
+- five consecutive strict verifier executions: PASS;
+- canonical document cap: 3;
+- `graphium/` runtime: byte-for-byte identical to Candidate C1;
+- normalized runtime relative-manifest SHA-256:
+  adba5eba910f4caab60f80bd868bd7d617c00cf3850b6ab15134684e2be10d0b;
+- changed paths versus Candidate C1: harness/tests/three canonical authorities/this evidence only;
+- no new desktop candidate;
+- no T480 execution;
+- no Git mutation.
+
+STATIC_TESTS=266/266_PASS
+STRICT_RUNS=5/5_PASS
+CANONICAL_DOCUMENTS=3
+PRODUCT_RUNTIME_BYTE_EQUIVALENCE=PASS
+RUNTIME_RELATIVE_MANIFEST_SHA256=adba5eba910f4caab60f80bd868bd7d617c00cf3850b6ab15134684e2be10d0b
+NEW_DESKTOP_CANDIDATE=NO
+NEW_T480_RUN=NO
+GIT_MUTATION=NO
+FINAL_PHASE=G06_LANE4_STATIC_REDESIGN_CLOSURE_PASS

@@ -1,0 +1,35 @@
+GRAPHIUM G08 — ASYNC RESPONSIVENESS REPAIR EVIDENCE
+Date: 2026-08-19
+Status: IMPLEMENTED IN ISOLATED COPY / NON-CANDIDATE / T480 REQUALIFICATION PENDING
+
+MEASURED FAILURE AUTHORITY
+- Exact pre-repair tree: ef3c7f355103549ae4a9e9c0a2302828fcaec5b8
+- T480 GTK 3.24.41 diagnostic:
+  * Preview 5 KiB returned in 44.999 ms.
+  * Export 1 MiB rendered 787 pages in 109610.350 ms; PDF 725023 bytes; neutrality PASS.
+  * Preview 1 MiB reached first draw-page and exceeded containment before completion.
+- Verdict: synchronous large print workload is not promotable for editor responsiveness.
+
+DIRECT MATURE-SOURCE RE-AUDIT
+- Mousepad 0.7.0: mousepad/mousepad-print.c, mousepad_print_document_interactive():
+  gtk_print_operation_set_allow_async(GTK_PRINT_OPERATION(print), TRUE) before run().
+- gedit supplied source: gedit/gedit-print-job.c, gedit_print_job_print()/done_cb():
+  set_allow_async(TRUE), connect "done", release operation and clear ownership in done_cb.
+- GNOME Text Editor supplied source: src/editor-print-operation.c + src/editor-page.c:
+  operation constructed with "allow-async", TRUE; page keeps refs until "done" is emitted.
+- Leafpad/L3afpad remain useful thin synchronous contrasts, but the measured Graphium 1 MiB
+  workload activates the frozen G08 re-open condition for native async lifecycle.
+
+IMPLEMENTED REPAIR
+- production GtkPrintOperation now set_allow_async(True).
+- GraphiumPrintController retains one operation/_PrintJob while result is IN_PROGRESS.
+- GTK "done" completes async ownership; immediate non-IN_PROGRESS return is fallback completion.
+- identity gate prevents duplicate APPLY/ERROR publication when nested GTK lifecycle already fired.
+- overlapping Page Setup/Preview/Print is rejected before a second GtkPrintOperation is created.
+- no worker/thread/timer/queue/progress UI/custom preview/GtkSourceView added.
+- startup lazy import and XDG Page Setup lazy-load boundary unchanged.
+- printing Pango/Cairo pagination/render algorithm unchanged.
+
+QUALIFICATION POLICY
+This source is not a desktop candidate. Exact repaired-tree T480 lifecycle/responsiveness
+requalification is mandatory before any candidate authorization. Candidate attempts remain 0/2.

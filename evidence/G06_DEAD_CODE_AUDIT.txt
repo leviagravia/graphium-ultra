@@ -1,0 +1,35 @@
+GRAPHIUM G06 — DEAD CODE / DUPLICATE AUTHORITY AUDIT
+Date: 2026-08-15
+
+SCOPE
+-----
+New/modified G06 View modules, GTK projection, composition and G06 desktop tools.
+
+CHECKS
+------
+1. AST import-use audit on G06 application/infrastructure/GTK modules and G06 tools.
+   Result after cleanup: no unused imports.
+2. Exactly one ViewSettingsController class.
+3. Exactly one JsonViewSettingsStore class.
+4. Exactly one GraphiumTextView class.
+5. Exactly one GraphiumWindow._refresh_status path.
+6. No GtkSourceView, Gtk.Toolbar, Gtk.Notebook, Gio.FileMonitor or thread worker in
+   Graphium runtime source.
+7. JsonViewSettingsStore imports no GuardedFileWriter, DocumentSaveService, loader or
+   document target authority.
+8. G06 runtime does not add a second SearchController or DeltaHistory authority.
+9. Zoom/Fullscreen are absent from persistent ViewSettings fields.
+10. Status projection has no get_text/get_char_count/document split/word-count path.
+
+CLEANUP PERFORMED
+-----------------
+Removed an unused Gio import from tools/g06_true_gtk_gate.py. The later startup-regression tool was re-audited with the same AST import-use check and introduced no unused import. No runtime product code was
+removed by this audit.
+
+RESULT
+------
+G06_DEAD_CODE_AUDIT=PASS
+G06_DUPLICATE_AUTHORITY_AUDIT=PASS
+G06_UNUSED_IMPORT_AUDIT=PASS
+G06_DOCUMENT_CONFIG_BOUNDARY=PASS
+GIT_MUTATION=NO

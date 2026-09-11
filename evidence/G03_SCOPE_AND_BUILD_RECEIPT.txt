@@ -1,0 +1,29 @@
+GRAPHIUM G03 — SCOPE / BUILD RECEIPT
+Date: 2026-08-14
+Baseline commit: b91af48a5688772ceffc7eac202c68e1815d7a36
+Baseline tree: 3e5b24263d4086a3eccf4897b038b8992703db79
+Work item: G03 — Guarded Save / Save As
+
+Scope authorities:
+- graphium/domain/document_save.py
+- graphium/infrastructure/guarded_file_writer.py
+- graphium/application/document_save_service.py
+
+Narrow adaptations:
+- document_identity.py
+- document_loader.py
+- document_serialization.py
+- document_session.py
+
+Anti-scope:
+- no GTK product UI;
+- no chooser/overwrite dialog;
+- no live file monitor;
+- no Recent/backup/local-history side effects;
+- no second physical writer;
+- no direct-write fallback.
+
+Expected full tests: 129
+GTK desktop validation: N/A
+Canonical documents: exactly 3
+Final tree: certified externally by the final source manifest/finalizer (not self-embedded).

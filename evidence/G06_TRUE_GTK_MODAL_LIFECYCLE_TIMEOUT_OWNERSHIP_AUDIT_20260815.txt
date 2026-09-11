@@ -1,0 +1,268 @@
+GRAPHIUM G06 — TRUE-GTK / MODAL / LIFECYCLE / TIMEOUT OWNERSHIP MATURE-SOURCE AUDIT
+Date: 2026-08-15
+Status: STATIC AUDIT CLOSED / NEW QUALIFICATION STRATEGY FROZEN / NO NEW T480 RUN
+
+SCOPE
+This audit closes the entire boundary:
+  True-GTK scenario -> lifecycle state -> potentially modal product call -> dialog response
+  ownership -> GLib source ownership -> process timeout ownership -> phase/result reporting.
+
+The previously used G06 NON-CANDIDATE integrated-checkpoint line is RETIRED after two
+operational failures. This audit does NOT authorize an R3 of that line.
+
+FORENSIC INPUT — R2 T480
+The R2 checkpoint passed:
+- 261/261 non-desktop tests;
+- strict gates;
+- G04 True-GTK regression;
+- G05 True-GTK Search regression.
+It then timed out at the G06 True-GTK View gate. The user screenshot and log showed:
+- active document: crlf.txt (Modified);
+- status: UTF-8 · CRLF · Modified;
+- modal: "Save changes before continuing?".
+
+The product therefore executed the published lifecycle contract correctly. The G06 gate
+had left the status-projection scenario Modified and then requested another file Open.
+Because Graphium's GtkLifecycleUI uses a synchronous Gtk.MessageDialog.run(), the nested
+modal loop correctly blocked until a human response. The gate owned no response and the
+outer 90-second process watchdog eventually killed it.
+
+CLASSIFICATION
+R1 operational failure: PACKAGING_DIRECTORY_MODE_DEFECT; product verdict NOT REACHED.
+R2 operational failure: TRUE_GTK_GATE_MODAL_LIFECYCLE_OWNERSHIP_DEFECT; product verdict NOT REACHED.
+INTEGRATED_CHECKPOINT_LINE=RETIRED_AFTER_2_OF_2_OPERATIONAL_FAILS
+G06_PRODUCT_RUNTIME_FAIL=NO_EVIDENCE
+
+SOURCE CORPUS — DIRECT LOCAL SOURCE, NO WEB SUBSTITUTE
+
+Mousepad 0.7.0
+- plugins/test-plugin/test-plugin.c
+  sha256 759f78f3f4e47c024bcba632dde639f472be50a87ce63a94c9bcc4eb16e8da33
+- mousepad/mousepad-dialogs.c
+  sha256 ca28746500bd1ef1c2fb8379425db7ab222bf21abfea89f3be4b1562d9aa0d1e
+- mousepad/mousepad-window.c
+  sha256 713a8db05d0084a6ba33480e0cf656cd31ef0a31d05093d77dfc89e30d71ca24
+
+Leafpad
+- src/view.c
+  sha256 8fc345e135e89f407b1f181e78c89bbc2b40ff5294a8078e6618b251bce07d22
+- src/dialog.c
+  sha256 de3336bc14aed8ba63a78a9e269f84307fdd5a725627c971553ce69d9bad1814
+
+L3afpad
+- src/view.c
+  sha256 de3a812e028c809fe32defd51131de095ddf09397c8b7db34c2a3b14706db2fd
+- src/dialog.c
+  sha256 93bb0205ad6300b1d9a4281b15a7e38a41e879f0af0da343f16d4bb21c689487
+
+Published Graphium regression authorities
+- tools/g04_true_gtk_gate.py
+  sha256 b1e23658075d6a5b45a9bf8544b16aed4dd5f50b5922441a2efb534dcbc500d0
+- tools/g05_true_gtk_gate.py
+  sha256 f0ca7d7929fdb35583bb22ff8214ec56f29a940ecfbbb8ee26577ef260872347
+
+======================================================================
+AUDIT A — PRODUCT MODALITY IS SYNCHRONOUS BY DESIGN
+======================================================================
+
+ASSUMPTION UNDER TEST
+An automated GTK gate may invoke an operation that can open a modal dialog and rely on a
+large outer process timeout to recover if the dialog appears.
+
+CONTRADICTORY / STRESSING EVIDENCE
+- Mousepad's save-changes path constructs a GtkMessageDialog and calls gtk_dialog_run();
+  the product waits synchronously for a response and only then dispatches SAVE, SAVE AS,
+  DON'T SAVE or CANCEL.
+- Leafpad and L3afpad both test the buffer modified flag before destructive lifecycle
+  transitions, then synchronously call their question-dialog runner; their dialog runner
+  itself calls gtk_dialog_run() and returns only after a user response.
+- Graphium's published GtkLifecycleUI follows the same mature GTK model: its unsaved
+  changes dialog is modal and synchronous by design.
+
+ALTERNATIVE MATURE MODEL
+Treat nested modal execution as a legitimate product state, not as a test anomaly. A test
+must either:
+1. prove the scenario cannot reach a modal boundary; or
+2. own a deterministic response before invoking the modal-capable action.
+
+GRAPHIUM CONSEQUENCE
+A G06 View test that does not intend to test lifecycle dialogs must never cross
+Saved -> Modified -> Open/New/Quit. Clean state is a precondition, not an afterthought.
+
+DECISION
+ADOPT: explicit clean lifecycle boundaries before every fixture replacement.
+REJECT: outer timeout as the primary mechanism for escaping a modal product state.
+
+======================================================================
+AUDIT B — RESPONSE OWNERSHIP MUST PRECEDE THE TRIGGER
+======================================================================
+
+ASSUMPTION UNDER TEST
+If a dialog appears unexpectedly, the test can notice it after the product call returns.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Mousepad's test plugin explicitly distinguishes actions that open blocking dialogs. For
+blocking actions it schedules a GLib timeout BEFORE action execution. The callback scans
+visible top-levels for GtkDialog and calls gtk_dialog_response(). The callback therefore
+runs inside the nested dialog loop and can release the product call. Mousepad also removes
+pending GLib sources when monitoring ends.
+
+Published Graphium G04/G05 already use the same principle:
+- G04 schedules a callback before operations expected to show a warning dialog.
+- G05 schedules callbacks before renderer-warning and Go-to-Line dialog paths.
+
+ALTERNATIVE MATURE MODEL
+Expected modal:
+  arm deterministic responder -> invoke product action -> verify expected result -> remove
+  any still-pending source.
+
+Unexpected modal in a scenario declared non-modal:
+  arm a tripwire -> invoke product action -> if a dialog appears, record its identity and
+  respond only to unwind the nested loop -> FAIL the scenario immediately after return.
+
+GRAPHIUM CONSEQUENCE
+The G06 View semantic gate has EXPECTED_MODAL_COUNT=0. It must not silently cancel and
+continue. An unexpected dialog is a gate failure, but the harness must own enough recovery
+to report it without waiting for the process watchdog.
+
+DECISION
+ADOPT: schedule-before-trigger response ownership.
+ADOPT: unexpected-modal tripwire that unwinds then FAILS.
+REJECT: generic auto-cancel that permits the scenario to continue as PASS.
+
+======================================================================
+AUDIT C — LIFECYCLE STATE OWNERSHIP IS STRONGER THAN VISUAL STATE
+======================================================================
+
+ASSUMPTION UNDER TEST
+A title/status showing Saved is sufficient proof that a test may replace the active file.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Graphium's published contract defines Saved/Modified by state identity. G04/G05 regression
+gates already return scenarios to an exact clean state before changing fixtures. G05's
+`establish(..., clean=True)` creates a new exact Saved state for independent Search cases.
+
+ALTERNATIVE MATURE MODEL
+Fixture replacement precondition:
+  session.modified == False
+  AND history.current_state_id == session.saved_editor_state_id
+  AND no response-owned modal remains active.
+
+GRAPHIUM CONSEQUENCE
+`open_clean()` and performance-fixture opens must assert exact Saved identity both before
+and after Open. The G06 Compact Status mutation test must restore with real Graphium Undo,
+then prove exact clean state before the next fixture.
+
+DECISION
+ADOPT: exact state-ID boundary as the gate oracle.
+REJECT: title/status text as the sole lifecycle oracle.
+
+======================================================================
+AUDIT D — TIMEOUT OWNERSHIP
+======================================================================
+
+ASSUMPTION UNDER TEST
+One large shell `timeout` around an integrated gate is sufficient timeout ownership.
+
+CONTRADICTORY / STRESSING EVIDENCE
+- Mousepad uses action-local GLib sources for blocking-dialog monitoring and explicitly
+  removes pending sources when the monitoring lifecycle ends.
+- Graphium G04 FIRST_EDITABLE owns a local deadline, diagnoses missing/partial handshake,
+  then terminates and escalates to kill if necessary.
+- Graphium comparator tooling similarly owns process deadlines and cleanup.
+- R2 showed that a 90-second outer timeout did contain the hang, but it identified only the
+  whole G06 gate rather than the accidental lifecycle boundary that caused it.
+
+ALTERNATIVE MATURE MODEL
+Two layers with separate purposes:
+1. INTERNAL OWNERSHIP: scenario-specific state checks, expected responders and unexpected
+   dialog tripwires; every GLib source ID is owned and removed/cancelled during cleanup.
+2. OUTER WATCHDOG: process-level containment only. It is a last-resort crash/hang guard,
+   not a normal dialog oracle and never a substitute for lifecycle ownership.
+
+Each gate emits BEGIN/PASS phase markers around modal-capable or long-running boundaries.
+
+GRAPHIUM CONSEQUENCE
+A future candidate runner may still use bounded subprocesses, but a hit on that bound is a
+harness/product investigation trigger; normal modal paths must be diagnosed earlier by the
+gate itself.
+
+DECISION
+ADOPT: internal ownership + outer containment.
+REJECT: one monolithic timeout as semantic authority.
+
+======================================================================
+AUDIT E — NEW G06 QUALIFICATION TOPOLOGY
+======================================================================
+
+ASSUMPTION UNDER TEST
+After repairing R2, the correct next move is an R3 of the same integrated NON-CANDIDATE
+checkpoint.
+
+CONTRADICTORY / STRESSING EVIDENCE
+The line has already consumed its two allowed operational failures. Reissuing the same
+integrated checkpoint would preserve the wrong qualification topology and encourage
+trial-and-error.
+
+ALTERNATIVE MATURE MODEL
+No more G06 pre-candidate integrated checkpoint. The next T480 product qualification, only
+when separately authorized, is a candidate runner that orchestrates independent fresh-
+process gates:
+
+LANE 1  G04 True-GTK regression — published lifecycle/editor oracle.
+LANE 2  G05 True-GTK Search regression — published search oracle.
+LANE 3  G06 True-GTK View semantics/content-neutrality — EXPECTED_MODAL_COUNT=0,
+        clean lifecycle boundaries, unexpected-modal tripwire.
+LANE 4  G06 View performance/Lightweight Budget — clean fixture opens only.
+LANE 5  one-process/one-window/one-document topology + shortcut collision audit.
+LANE 6  exact Graphium FIRST_EDITABLE regression.
+LANE 7  common FIRST_VISIBLE Leafpad/L3afpad/Mousepad/FeatherPad comparator.
+LANE 8  G05 Search performance regression.
+LANE 9  G06 startup self-regression gate against certified G04 baseline.
+LANE 10 final human G06 View validation only after lanes 1-9 PASS.
+
+Each lane is a fresh process or already-isolated external benchmark. A lane failure stops
+qualification; no later lane runs. No lane inherits a Modified editor state from another.
+
+GRAPHIUM CONSEQUENCE
+The retired checkpoint is evidence only. It is not a template to patch and rerun.
+
+DECISION
+REJECT: G06 integrated NON-CANDIDATE checkpoint R3.
+ADOPT: fresh-process gate matrix for the eventual G06 desktop candidate.
+
+======================================================================
+STATIC HARDENING RESULT
+======================================================================
+
+Implemented in static audit copy only; no Graphium product runtime change:
+- G06 True-GTK gate now uses exact clean lifecycle assertions.
+- Compact Status mutation scenario restores Saved state with real Undo before fixture Open.
+- `open_clean()` checks exact Saved identity before/after Open.
+- `UnexpectedModalTripwire` stores its GLib source ID; unexpected dialogs are responded to
+  only to unwind nested execution and then force FAIL.
+- Font action, although monkeypatched to avoid the chooser in this gate, is protected by the
+  unexpected-modal tripwire so a regression cannot silently hang.
+- G06 View performance fixture transitions now use exact clean-boundary checks too.
+- regression tests statically require these ownership boundaries.
+- phase markers remain around fixture/lifecycle transitions.
+
+FORBIDDEN REPAIR SHORTCUTS
+- no weakening/removal of Graphium's unsaved-change dialog;
+- no generic "cancel every dialog and continue" helper;
+- no direct Open from Modified state in G06 View/performance gates;
+- no R3 integrated checkpoint;
+- no additional T480 run before a separately authorized G06 product candidate.
+
+FROZEN MARKERS
+G06_INTEGRATED_CHECKPOINT_LINE=RETIRED
+G06_TRUE_GTK_EXPECTED_MODAL_COUNT=0
+G06_TRUE_GTK_UNEXPECTED_MODAL=UNWIND_THEN_FAIL
+G06_FIXTURE_OPEN_REQUIRES_EXACT_SAVED_STATE=YES
+G06_EXPECTED_DIALOG_RESPONSE_OWNERSHIP=SCHEDULE_BEFORE_TRIGGER
+G06_GLIB_SOURCE_OWNERSHIP=EXPLICIT_CLEANUP_REQUIRED
+G06_OUTER_TIMEOUT_ROLE=LAST_RESORT_PROCESS_CONTAINMENT_ONLY
+G06_QUALIFICATION_TOPOLOGY=FRESH_PROCESS_GATE_MATRIX
+G06_NEXT_T480_RUN=PRODUCT_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION
+MATURE_SOURCE_AUDIT=PASS
+CONFIRMATION_BIAS_COUNTERMEASURE=PASS

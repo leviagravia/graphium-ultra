@@ -1,0 +1,37 @@
+GRAPHIUM G02 — SCOPE / BUILD / HEADLESS VALIDATION RECEIPT
+==========================================================
+Date: 2026-08-14
+Baseline commit: bf7878c3cdc5cf895b0ffba86b854860c34936a4
+Baseline tree: 2334e0c71f01a1b0a30bcb9298911c7c0cafe042
+
+Scope implemented:
+  graphium/domain/history.py
+  graphium/application/document_session.py
+  graphium/application/editor_transaction.py
+
+Supporting changes:
+  G02 regression tests and strict verifier
+  W116 provenance + mature-source audit evidence
+  dead-code cleanup of obsolete current-work-item verifiers
+  existing 3 canonical documents updated incrementally
+  post-G01 publication/Memorandum MO content incorporated
+
+Target users:
+  Leafpad / L3afpad / Mousepad quick-edit class
+
+Hard anti-scope:
+  GTK product UI = absent
+  physical writer = absent
+  Save/Save As I/O = deferred G03
+  Gtk.TextBuffer adapter/native user-action wiring = deferred G04
+  tabs / syntax highlighting / IDE behavior = absent
+
+Validation:
+  81/81 tests PASS
+  strict gates PASS
+  GTK desktop validation N/A
+
+G02_HEADLESS_VALIDATION=PASS
+G02_FINALIZATION_READY=YES
+COMMIT_CREATED=NO
+PUSH_ATTEMPTED=NO

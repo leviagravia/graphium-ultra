@@ -1,0 +1,56 @@
+GRAPHIUM G07 — GDK NAMESPACE FAILURE / DIRECT MATURE-SOURCE REAUDIT
+Date: 2026-08-18
+Web research: NOT USED
+Scope: failure-specific audit after Candidate R1 Reissue stopped before the first G06 View worker.
+
+OBSERVED STOP
+Candidate R1 Reissue passed 304/304, strict gates, G04/G05/G06/G07 True-GTK, then the first
+G06 View performance worker exited before product measurement with:
+  ImportError: Requiring namespace 'Gdk' version '3.0', but '4.0' is already loaded
+The candidate runner correctly classified the verdict and attempt consumption as pending
+failure-specific mature-source re-audit.
+
+HARNESS ROOT CAUSE
+The contamination-aware revision of tools/g06_view_performance.py introduced a direct Gdk import:
+  gi.require_version("Gtk", "3.0")
+  from gi.repository import Gdk, Gtk
+Because Gdk was not version-frozen, a host containing both Gdk-3.0 and Gdk-4.0 typelibs could
+resolve Gdk 4 before Gtk 3 completed namespace ownership. The worker then attempted to combine
+Gdk4 with Graphium's GTK3 stack and failed before GraphiumApplication was imported/measured.
+This code was added only to the qualification harness for input-contamination tripwires.
+
+DIRECT MATURE SOURCE: L3AFPAD
+- configure.ac binds PKG_CHECK_MODULES(GTK, gtk+-3.0).
+- Its GDK/GTK event types therefore belong to one GTK3 ABI family at build time.
+
+DIRECT MATURE SOURCE: MOUSEPAD 0.7.0
+- meson.build binds gtk = dependency('gtk+-3.0', ...).
+- mousepad source uses GTK/GDK through that single GTK3 dependency.
+
+DIRECT MATURE SOURCE: GEDIT CORPUS
+- configure.ac queries gdk-3.0 and requires gtk+-3.0.
+- The application therefore does not mix a GDK4 event namespace into a GTK3 UI process.
+
+DIRECT MATURE SOURCE: GNOME TEXT EDITOR
+- meson.build binds gtk4 and GtkSourceView 5, with GDK version macros derived from that GTK major.
+- This is the complementary mature model: GTK4/GDK4 are coherent as one family.
+
+DIRECT MATURE SOURCE: FEATHERPAD
+- Current CMake/source corpus is consistently Qt6; version conditionals are within the same
+  selected Qt major. This reinforces the general rule that event/input instrumentation must use
+  the same toolkit family as the UI under test.
+
+DISPOSITION
+ADOPT: explicit toolkit-major ownership for every namespace used by a test worker.
+REPAIR: in worker-local code require Gdk 3.0 and Gtk 3.0 before importing either namespace.
+REJECT: changing Graphium runtime, allowing Gdk4 in a GTK3 process, or weakening the input tripwire.
+
+CLASSIFICATION
+PRODUCT_RUNTIME_DEFECT_PROVEN=NO
+VIEW_PERFORMANCE_PRODUCT_REGRESSION_PROVEN=NO
+HARNESS_NAMESPACE_OWNERSHIP_DEFECT=YES
+CANDIDATE_EXECUTION_PRODUCT_VERDICT=NOT_REACHED
+VALID_CANDIDATE_ATTEMPT_CONSUMED=NO
+PRODUCT_RUNTIME_CHANGE_REQUIRED=NO
+HARNESS_REPAIR_REQUIRED=YES
+MATURE_REAUDIT=PASS

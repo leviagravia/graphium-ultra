@@ -1,0 +1,360 @@
+GRAPHIUM G16 — PRE-CANDIDATE BLOCKER CORRECTIVE CONTRACT FREEZE
+Light-mode Line Number Gutter + Hunspell Pipe Response Groups
+Date: 2026-08-26
+Status: SOURCE-FIRST CONTRACT FROZEN
+Implementation: NOT STARTED
+Candidate: NO
+Attempt consumed: NO
+Canonical Git mutation: NO
+
+0. GOVERNANCE / BASELINE
+========================
+G15 is CLOSED / CERTIFIED / PUBLISHED / CANONICALLY CONVERGED.
+G15 product publication:
+  commit 16b645ed653be5b44efa8721db11cca63f0633bd
+  tree   e433758d1d68ef5bea6528e15e65d786e0679d31
+  product subtree 1f63eca6724b379abab8e8d534667723e57276f6
+G15 post-publication governance:
+  commit 15ae13fa153d77db74470d5718e8ab9bbbb5708c
+  tree   0bb9335c717f371481c752818c5f83fdb9cb16f3
+
+G16 About Icon corrective implementation has already reached NON-CANDIDATE
+True-GTK PASS. It is not yet a Candidate.
+
+Two user-visible product defects were discovered before G16 Candidate declaration.
+Therefore G16 Candidate-readiness is BLOCKED. These defects are mandatory
+pre-Candidate blockers; they do not rewrite G15 history and do not consume a
+Candidate attempt.
+
+The corrective release remains intended to become version 0.0.16 only after all
+G16 pre-Candidate blockers pass.
+
+1. BLOCKER A — LIGHT MODE LINE-NUMBER GUTTER
+============================================
+
+1.1 Observed failure
+--------------------
+With View > Appearance > Light and View > Line Numbers enabled:
+- the document surface is light;
+- the Gtk.TextView LEFT border-window used for line numbers remains black/dark;
+- the result is a visually detached black column at the left of a light editor.
+
+Classification:
+  PRODUCT_FAIL=YES
+  ORACLE_GAP=YES
+
+1.2 Graphium ownership finding
+------------------------------
+Runtime owner:
+  graphium/adapters/gtk/editor_view.py
+
+Appearance authority:
+  graphium/adapters/gtk/appearance.py
+
+Current architecture:
+- Graphium intentionally uses Gtk.TextView's native LEFT border window.
+- Graphium draws logical line-number glyphs itself.
+- Graphium currently does not paint the LEFT border-window background.
+- Explicit Light/Dark appearance is projected by one application CSS provider.
+- That provider styles the Gtk.TextView text surface, but the custom-drawn border
+  window does not receive an explicit Graphium background rendering step.
+
+1.3 Mature-source comparison
+----------------------------
+Leafpad/L3afpad:
+- use Gtk.TextView border-window line-number implementations;
+- line-number foreground is derived from the widget/style context rather than
+  from an independent color authority.
+
+Mousepad / gedit / GNOME Text Editor:
+- line-number gutter is delegated to GtkSourceView/GtkSourceGutter;
+- gutter appearance participates in the editor/theme styling authority.
+
+FeatherPad:
+- owns a dedicated line-number area and paints it as part of the editor's active
+  visual palette.
+
+Conclusion:
+  A custom gutter must participate in the editor's current theme/style authority.
+  An unowned native background is not acceptable once Graphium explicitly forces
+  Light or Dark appearance.
+
+1.4 FROZEN repair contract
+--------------------------
+ADOPT:
+- keep Gtk.TextView LEFT border-window architecture;
+- render the existing gutter background explicitly from the SAME Gtk.TextView
+  GtkStyleContext that owns the editor presentation;
+- render line-number glyphs after the background;
+- System/Light/Dark all derive from the same style authority.
+
+REJECT:
+- GtkSourceView migration;
+- new gutter widget;
+- new appearance module;
+- new persisted color preference;
+- hard-coded independent gutter Light/Dark colors;
+- CSS selector hacks that create a second gutter palette authority;
+- changing line-number width, logical-line semantics, wrapping behavior,
+  persistence or command topology.
+
+Target runtime delta:
+  graphium/adapters/gtk/editor_view.py only, unless a test proves an unavoidable
+  existing-owner adjustment. appearance.py SHOULD remain unchanged.
+
+Expected visual semantics:
+- Explicit Light: blank gutter background is visually the same editor-family
+  light background; it must not remain a dark strip.
+- Explicit Dark: gutter remains dark and legible.
+- System: gutter follows the system/editor style context.
+- Line-number glyphs remain legible in all three modes.
+- Toggling appearance or line numbers must not alter document text/history,
+  savepoint or persistence semantics beyond the already-owned View setting.
+
+1.5 Required RED/GREEN permanent oracles
+-----------------------------------------
+Static/headless:
+- no new runtime module/dependency/config key;
+- no independent gutter color constants;
+- existing Gtk.TextView LEFT border-window topology preserved;
+- gutter draw path owns a background-render step before glyph rendering.
+
+True-GTK:
+- force a dark desktop/theme baseline, then activate Graphium Light;
+- enable line numbers and render a real multiline Gtk.TextView;
+- sample a blank gutter pixel away from glyphs and a blank editor-surface pixel;
+- Light must be light and must not retain the dark baseline;
+- switch to Dark and verify gutter follows the dark editor family;
+- switch to System and verify no stale explicit Light/Dark projection survives;
+- verify line numbers remain visible and logical-line placement unchanged.
+
+Document neutrality:
+- appearance and line-number toggles leave text, history state and savepoint
+  unchanged.
+
+Manual tests target:
+  0, if the real GTK pixel oracle proves the visible property deterministically.
+
+2. BLOCKER B — HUNSPELL RESPONSE GROUP PARSER + ERROR PROJECTION
+================================================================
+
+2.1 Observed failure
+--------------------
+User system proves:
+- hunspell-it package installed;
+- `hunspell -D` reports `/usr/share/hunspell/it_IT`;
+- `/usr/share/hunspell/it_IT.dic` and `.aff` exist;
+- Graphium's Dictionary combo visibly contains/selects `it_IT`.
+
+Graphium nevertheless stops with:
+  "Hunspell response group is not blank-terminated"
+
+and incorrectly tells the user to verify that Hunspell/dictionary are installed.
+
+Classification:
+  HUNSPELL_INSTALLED=YES
+  DICTIONARY_DISCOVERY=PASS
+  PRODUCT_FAIL=YES
+  ORACLE_GAP=YES
+  MISLEADING_ERROR_PROJECTION=YES
+
+2.2 Authoritative Hunspell protocol
+-----------------------------------
+For `hunspell -a`:
+- one identification/banner line is emitted at startup;
+- for EACH input line, Hunspell may emit one result line FOR EACH WORD checked;
+- an additional blank line terminates the complete response group for that input
+  line;
+- programmatic input should be prefixed with `^` so the rest of the line is
+  spell-checked as data.
+
+Therefore:
+  response_group := result_line{1..N} + blank_terminator
+
+Graphium's current implementation incorrectly assumes:
+  response_group := exactly_one_result_line + blank_terminator
+
+2.3 Graphium ownership finding
+------------------------------
+Protocol/process owner:
+  graphium/infrastructure/hunspell_session.py
+
+UI error-projection owner:
+  graphium/adapters/gtk/spelling.py
+
+Spell-session/document owner remains unchanged:
+  graphium/application/spellcheck.py
+  graphium/domain/spellcheck.py
+
+Current safe guarantees that MUST survive:
+- external Hunspell process is optional and only created on explicit spell check;
+- no shell execution;
+- resolved absolute executable;
+- explicit dictionary revalidation;
+- one dialog worker / at most one Hunspell child;
+- bounded timeout;
+- bounded protocol line size;
+- bounded token size;
+- cancellation;
+- child terminate/kill/reap;
+- stale-result fencing;
+- no GTK-main-thread blocking;
+- no startup dictionary discovery.
+
+2.4 Mature/authoritative comparison
+-----------------------------------
+Hunspell's own documented pipe grammar is authoritative for this boundary.
+
+FeatherPad uses libhunspell directly and therefore does not parse the CLI pipe
+grammar. This validates that Graphium's external-process architecture may remain
+different, but Graphium must fully own the protocol grammar it chose.
+
+Mousepad/gedit/GNOME Text Editor delegate spelling lifecycle/protocol complexity
+to dedicated spelling libraries. They do not justify weakening Graphium's
+existing process/cancellation bounds.
+
+Conclusion:
+  Keep the existing dependency-light external Hunspell boundary, but implement
+  the real response-group grammar instead of changing Graphium's lexical model to
+  hide the parser defect.
+
+2.5 FROZEN parser contract
+--------------------------
+ADOPT:
+- after writing one request, read result lines until the documented blank
+  terminator is consumed;
+- group reading is bounded by time, per-line bytes, total group lines and total
+  group bytes;
+- every nonblank record must be valid Hunspell pipe syntax;
+- unsupported/malformed records fail closed and close/reap the session;
+- missing blank terminator remains a protocol failure;
+- after a valid multi-record group, the next request must remain synchronized.
+
+Aggregation into Graphium's existing one-span/one-result model:
+- one-record groups preserve current behavior and suggestions exactly;
+- multi-record group where ALL records mean "correct" => the Graphium lexical span
+  is correct;
+- multi-record group containing one or more miss records => the Graphium lexical
+  span is incorrect;
+- component-level suggestions MUST NOT be exposed as if they were safe
+  replacements for the entire Graphium span;
+- therefore, in this corrective line, multi-record miss groups return an empty
+  suggestion tuple. The user may Ignore or type an explicit whole-span
+  replacement.
+- no attempt is made in this corrective line to splice component suggestions back
+  into a compound/hyphenated Graphium span.
+
+This rule is deliberately conservative: it prevents both protocol aborts and
+incorrect whole-token replacement suggestions.
+
+REJECT:
+- removing apostrophe/hyphen joiners from Graphium's domain tokenizer merely to
+  force one Hunspell record;
+- switching to libhunspell/gspell/libspelling;
+- invoking one Hunspell process per component word;
+- shell parsing;
+- unbounded read-until-blank;
+- silently discarding extra result records;
+- using only the first Hunspell result line;
+- changing document replacement/history semantics.
+
+2.6 FROZEN UI error contract
+----------------------------
+The existing capability-absent case remains:
+- resolver cannot find Hunspell before dialog creation:
+    "Hunspell is not installed..." style installation guidance is valid.
+
+Once executable and dictionary discovery have succeeded:
+- HunspellProtocolError:
+    protocol/runtime failure message; MUST NOT say "install Hunspell";
+- HunspellTimeoutError:
+    timeout/non-response message; MUST NOT say "install Hunspell";
+- HunspellProcessError after start/discovery:
+    process/dictionary-no-longer-available message based on actual failure;
+    MUST NOT generically assert that Hunspell was never installed;
+- stale document remains a separate spell-session message.
+
+All fatal paths remain document-neutral.
+
+2.7 Required RED/GREEN permanent oracles
+-----------------------------------------
+Protocol unit/integration:
+- one correct record + blank: unchanged PASS;
+- one miss record + blank: suggestions unchanged;
+- multi-record all-correct + blank: aggregate correct;
+- multi-record with one miss + blank: aggregate incorrect, suggestions=();
+- multi-record with multiple misses + blank: aggregate incorrect, suggestions=();
+- extra records are consumed so the next request remains synchronized;
+- malformed record inside a group: fail closed;
+- missing blank terminator: fail closed;
+- over-line budget: fail closed;
+- over-group line-count budget: fail closed;
+- over-group byte budget: fail closed;
+- timeout mid-group: bounded and child reaped;
+- cancellation mid-group: bounded and child reaped.
+
+Fake-Hunspell test discipline:
+- the fake must support multi-record groups;
+- it must no longer encode "one result line per Graphium request" as an oracle.
+
+Real Hunspell T480 focused validation:
+- confirm executable and `it_IT` pair;
+- exercise a real `hunspell -a` multi-record input group;
+- prove Graphium consumes the entire group and remains synchronized for the next
+  request;
+- open the real Check Spelling flow with installed Hunspell and verify no false
+  installation message is produced for a valid multi-record group;
+- no manual visual judgement required.
+
+2.8 Lightweight budget
+----------------------
+New runtime modules: 0
+New dependencies: 0
+New subprocess types: 0
+New workers/threads: 0
+New config keys: 0
+New dictionary persistence: 0
+New spell UI surface: 0
+New lexical model: 0
+
+3. CROSS-BLOCKER REGRESSION REQUIREMENTS
+========================================
+Must preserve:
+- G16 About Icon exact identity fix;
+- application icon identity;
+- G15 direct Tab controls;
+- G15 Hunspell dictionary enumeration/switch/restart/stale fencing;
+- transform shortcuts;
+- Help/About/legal metadata;
+- document safety/save/recovery/history;
+- startup laziness;
+- lightweight topology.
+
+Required qualification after implementation:
+- focused RED->GREEN tests for both blockers;
+- complete Behavioral suite;
+- complete Integration suite;
+- complete Packaging/Release suite;
+- structural/lightweight audit;
+- focused True-GTK only for properties that require the T480:
+    gutter Light/Dark/System rendering;
+    real Hunspell pipe behavior with installed dictionary.
+- manual tests target: 0.
+
+4. STATUS / NEXT STEP
+=====================
+G16_ABOUT_ICON_NONCANDIDATE_TRUE_GTK=PASS
+G16_PRE_CANDIDATE_BLOCKER_CONTRACT_FREEZE=PASS
+G16_LINE_NUMBER_LIGHT_GUTTER_CONTRACT=FROZEN
+G16_HUNSPELL_RESPONSE_GROUP_CONTRACT=FROZEN
+G16_HUNSPELL_ERROR_PROJECTION_CONTRACT=FROZEN
+
+G16_CANDIDATE_READINESS=BLOCKED
+IMPLEMENTATION_STARTED=NO
+CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+
+NEXT PERMISSIBLE STEP:
+NON-CANDIDATE RED->GREEN implementation of the two frozen blockers, only after a
+new explicit user authorization.

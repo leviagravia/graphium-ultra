@@ -1,0 +1,57 @@
+GRAPHIUM G05 SCOPE AND BUILD RECEIPT
+Date: 2026-08-14
+Work item: G05 — Search Menu Core / Find / Replace / Go to Line + Trustworthiness Gate
+Published baseline commit: 283f1aa5352c2403ac9e0a945b87cc82cd08cff0
+Published baseline tree: 5e2aa256a47739c45f9c79f39a9685b5c6a454d6
+
+FROZEN PRODUCT SCOPE
+- product-owned Search menu: Find, Find Next, Find Previous, Replace, Go to Line;
+- literal current-document search only;
+- Match Case only; Whole Word deferred; regex/fuzzy/multi-file rejected v1;
+- single-line Unicode query/replacement;
+- Unicode casefold correctness with logical-line-bounded working state;
+- Find navigation does not materialize all matches and is state-neutral;
+- Replace One one-click acquisition / one Undo;
+- Replace All original-match-frozen, non-cascading, one state/Undo, renderer-preflighted;
+- Replace All cap 50,000 matches and independent DeltaHistory payload cap;
+- stale programmatic plans fail closed;
+- buffer application has expected-delete verification and inverse rollback;
+- SearchBar lazy, native close affordance, no type-to-search event forwarding;
+- Go to Line is bounded 1-based view-only navigation;
+- no background worker/index/cache/history database/highlight-all platform.
+
+NONDESKTOP VERIFICATION
+- full suite: 238/238 PASS;
+- strict verifier: 5 consecutive PASS;
+- canonical document cap: 3;
+- git diff --check: PASS;
+- arbitrary-CWD bootstrap: G05 search performance / True-GTK / shortcut audit PASS;
+- G05 dead-code / duplicate-authority audit: PASS;
+- rejected whole-document Unicode map and occurrence-list navigation absent.
+
+LOCAL ENGINEERING PERFORMANCE (NOT T480 CERTIFICATION)
+Latest g05_search_performance.py PASS medians on container engineering host:
+- find-cs-1m: 0.379 ms
+- find-ci-1m: 11.913 ms
+- find-ci-expansion-1m: 12.343 ms
+- find-cs-10m: 4.784 ms
+- find-ci-10m: 120.280 ms
+- find-ci-expansion-10m: 131.728 ms
+- replace-all-1m: 5.673 ms
+- replace-all-10m: 61.962 ms
+- replace-cap-refusal: 35.827 ms
+- maximum observed worker RSS: 164.02 MiB
+
+DESKTOP STATUS
+G04 regression True-GTK: pending T480 candidate runner.
+G05 True-GTK Search gate: pending T480 candidate runner.
+G04 startup/common comparator regression: pending T480 candidate runner.
+G05 explicit-command performance: pending T480 candidate runner.
+Manual G05 desktop: pending T480 candidate runner.
+
+G05_SCOPE_FROZEN=YES
+G05_NONDESKTOP_TESTS=238/238_PASS
+G05_STRICT_CONSECUTIVE_RUNS=5/5_PASS
+G05_LIGHTWEIGHT_BUDGET_LOCAL_GATE=PASS
+G05_DESKTOP_VALIDATION=PENDING_T480
+GIT_MUTATION_USER_REPO=NO

@@ -1,0 +1,96 @@
+GRAPHIUM G08 — IMPLEMENTATION NON-CANDIDATE RECEIPT
+Date: 2026-08-18
+Baseline authority: published G07 commit 7a3f49218dbabdbd6e47114a5fde2f4999f9c841
+Baseline tree: 198164be38e77538b92f45d5d53fe4b0c1929955
+
+STATUS
+  G08_IMPLEMENTATION=BUILT_IN_ISOLATED_COPY
+  G08_DESKTOP_CANDIDATE=NOT_DECLARED
+  CANDIDATE_ATTEMPTS_CONSUMED=0/2
+  CANONICAL_GIT_MUTATION=NONE
+  T480_PRINT_BINDING_PROBE=PENDING
+
+IMPLEMENTED SCOPE
+  File -> Page Setup…
+  File -> Print Preview (Ctrl+Shift+P)
+  File -> Print… (Ctrl+P)
+  lazy graphium.adapters.gtk.printing adapter
+  product-local XDG config/page-setup.ini Gtk.PageSetup persistence
+  0600 complete-temp + fsync + atomic replace
+  process-memory-only Gtk.PrintSettings convenience state
+  fresh synchronous Gtk.PrintOperation per Preview/Print
+  native GTK Preview
+  Pango/Cairo rendering and pagination from measured complete visual Pango lines
+  live GtkTextBuffer snapshot + logical basename/Untitled + persistent base font
+
+ANTI-SCOPE PRESERVED
+  no GtkSourceView/GtkSourcePrintCompositor
+  no custom preview
+  no worker/thread/async/background print service
+  no persistent printer settings/history
+  no print module import or page-setup I/O on normal startup
+  no document/savepoint/history/recent authority in printing adapter
+
+PRE-IMPLEMENTATION BASELINE
+  local headless baseline: 304/304 PASS
+
+FIRST POST-INTEGRATION HEADLESS RESULT
+  301 PASS / 3 FAIL.
+  The failures were boundary/oracle maintenance, not a desktop product verdict:
+    1. G03 document-writer topology gate treated printing.py os.replace(page-setup.ini)
+       as a second DOCUMENT writer.
+    2. G07 exact release-identity assertion required WORK_ITEM=G07.
+    3. G07 exact File-surface assertion rejected the frozen G08 commands.
+
+MANDATORY POST-FAIL RE-AUDIT BEFORE REPAIR
+  Current Graphium G03/G06/G07 source was re-read. The existing G03 gate already contains an
+  explicit exception class for product XDG convenience stores (view.json and recent-files.json),
+  because config namespace mutation is not user-document namespace mutation.
+
+  Direct preserved mature-source re-audit (no web):
+    - gedit/gedit-app.c lazily owns GtkPageSetup/GtkPrintSettings and serializes them to product
+      files with gtk_page_setup_to_file / gtk_print_settings_to_file, independently of document Save.
+    - gnome-text-editor/src/editor-print-operation.c loads/saves page-setup and print-settings
+      product files around print-operation lifetime, independently of document writer ownership.
+    - leafpad/src/gtkprint.c creates GtkPrintOperation on demand and keeps page setup/print settings
+      in print-specific state, separate from document Save.
+
+ROOT CAUSE / REPAIR RULE
+  G03's invariant is exactly one physical writer for USER DOCUMENT TARGETS. It is not a ban on
+  narrowly scoped product configuration files. Therefore printing.py is classified alongside the
+  already explicit view/recent XDG stores for that gate. G07's release-specific exact assertions
+  are converted to G07 regression-preservation assertions; G08 owns the new exact identity/surface.
+  No GuardedFileWriter rule is weakened and no product behavior was changed to satisfy the gate.
+
+STRICT VERIFIER REISSUE
+  The first G08 VERIFY_GRAPHIUM.py invocation stopped before product/runtime gates because the
+  verifier still hard-coded the exact G07 release identity and G07 exact command surface.
+  Classification: STALE_RELEASE_IDENTITY_ORACLE / PRE-PRODUCT VERIFIER STOP.
+  This did not consume a candidate attempt and did not establish a product failure.
+
+  Ownership review before repair:
+    - prior-work-item tests remain regression authorities and must not require the current release
+      identity/surface to remain frozen at G07;
+    - the top-level verifier owns current-release identity and exact command-surface qualification;
+    - document-writer confinement remains strict, with only exact product-XDG stores allow-listed.
+
+  Verifier repair:
+    - current identity advanced to exact G08;
+    - exact current command surface advanced to include Page Setup / Print Preview / Print;
+    - G07 architectural gates retained as regressions;
+    - printing.py added only to the exact non-document XDG configuration-store allow-list;
+    - explicit G08 architecture/evidence/contract gates added;
+    - expected test count advanced from 304 to 314.
+
+  Reissued local result:
+    GRAPHIUM_SELFTEST=PASS tests=314
+    STRICT_GATES=PASS
+    G08_PRINT_BINDING_PROBE=PENDING_T480_NONCANDIDATE
+    FINAL_PHASE=G08_NONDESKTOP_IMPLEMENTATION_VERIFIED_BINDING_PROBE_PENDING
+
+POST-BINDING PREQUALIFICATION TOPOLOGY STOP
+  After the initial T480 binding probe PASS, prequalification discovered that the implementation
+  baseline extraction had lost G07 executable file modes.  See
+  G08_EXECUTABLE_TOPOLOGY_FAILURE_REAUDIT_20260818.txt.  The old tree is retired for candidate
+  qualification; printing bytes are unchanged, executable topology is restored, and the repaired
+  tree requires a new NON-CANDIDATE binding probe before later desktop qualification.

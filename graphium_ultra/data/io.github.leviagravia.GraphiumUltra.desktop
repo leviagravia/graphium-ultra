@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Graphium Ultra
+Comment=Lightweight native editor with Plus workspace and Ultra Markdown viewer
+Exec=graphium-ultra %F
+Icon=io.github.leviagravia.GraphiumUltra
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/plain;text/markdown;
+StartupNotify=true

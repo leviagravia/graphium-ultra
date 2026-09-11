@@ -1,0 +1,213 @@
+PROJECT=GRAPHIUM
+WORK_ITEM=G15-S6
+TITLE=Integral Regression / Structural Audit
+DATE=2026-08-26
+MODE=NON-CANDIDATE / SOURCE-FIRST / NO PRODUCT IMPLEMENTATION
+
+INPUT AUTHORITIES
+=================
+Published Core baseline used for direct comparison:
+  G14 handover source: CURRENT/SOURCE_POST_G14_CORE_FINAL_8cfe2c19
+  G14 published Core status: CLOSED / CERTIFIED / PUBLISHED
+
+Exact cumulative G15 source audited:
+  G15-S5 package: GRAPHIUM_G15_S5_HELP_ABOUT_LEGAL_TRUE_GTK_NONCANDIDATE_T480_20260826.zip
+  T480 source identity proved before/after S5 run:
+    c15014f46fbc8b0a69c345d498af82797419385408ca87bc2dc1aed51973a55c
+
+G15-S5 T480 closure supplied by user:
+  INSTALLED_LICENSE_PROJECTION=PASS
+  DEFAULT_APPLICATION_ICON_AUTHORITY=PASS
+  ABOUT_STANDARD_METADATA=PASS
+  ABOUT_GPL3_OR_LATER_ENUM=PASS
+  ABOUT_REPOSITORY_UNCHANGED=PASS
+  ABOUT_SYSTEM_INFORMATION=PASS
+  ABOUT_APPLICATION_LOGO=PASS
+  TRUE_GTK_HELP_ABOUT_LEGAL=PASS
+  SOURCE_IDENTITY_POST_RUN=PASS
+  PACKAGE_IDENTITY_POST_RUN=PASS
+  MANUAL_TESTS=0
+  CANDIDATE=NO
+  ATTEMPT_CONSUMED=NO
+  GIT_MUTATION=NO
+
+SERIAL SLICE CLOSURE
+====================
+G15-S1 Application Icon Identity             CLOSED / NON-CANDIDATE TRUE-GTK PASS
+G15-S2 Tab Controls Simplification            CLOSED / NON-CANDIDATE TRUE-GTK PASS
+G15-S3 Hunspell Dictionary Selection          CLOSED / NON-CANDIDATE TRUE-GTK PASS
+G15-S4 Transform Text Shortcuts               CLOSED / NON-CANDIDATE TRUE-GTK PASS
+G15-S5 Help / About / Legal Closure            CLOSED / NON-CANDIDATE TRUE-GTK PASS
+G15-S6 Integral Regression / Structural Audit  THIS RECEIPT
+
+MATURE-SOURCE RE-COMPARISON
+===========================
+Direct local mature corpus reused from the exact G14 handover:
+  Leafpad
+  L3afpad
+  Mousepad 0.7.0
+  FeatherPad
+  gedit
+  GNOME Text Editor
+
+Findings relevant to cumulative structure:
+
+1. Tab controls
+   Mousepad owns a direct Tab Size action/submenu and a narrow Select Tab Size dialog. Leafpad/L3afpad
+   also treat tab width as a direct editor control. Mature editors with large preference systems may duplicate
+   such settings in Preferences; Graphium correctly rejects that duplication because it has no broad preference
+   surface. G15-S2 erased the generic Preferences runtime instead of retaining a hidden second owner.
+
+2. Hunspell dictionary selection
+   FeatherPad directly validates a dictionary base and the companion .aff/.dic pair before constructing its
+   Hunspell checker. Mousepad/gedit/GNOME Text Editor can delegate language enumeration and lifecycle to
+   dedicated spelling libraries. Graphium deliberately retains its already-certified external Hunspell CLI
+   boundary, so on-demand discovery needs its own bounded timeout/output/reap ownership rather than a new
+   gspell/libspelling dependency or hard-coded distro dictionary paths.
+
+   The S3 runtime growth is therefore classified ESSENTIAL COMPLEXITY for the selected architecture:
+     - no new dependency;
+     - no startup discovery;
+     - no blocking GTK main-thread discovery;
+     - no hard-coded distro path authority;
+     - no new config/document metadata;
+     - one existing worker only;
+     - bounded external-process output/time/path/count;
+     - explicit reap/cancel/stale fencing.
+
+   Collapsing those guarantees merely to reduce LOC would reduce external-process and editor-state safety and
+   is REJECTED as cosmetic simplification.
+
+3. Application identity / About / legal
+   Mature GTK editors use one stable application icon identity and standard About metadata fields. Graphium
+   follows that pattern: S1 owns the application/default-window icon, and S5 does not create an About-specific
+   logo authority. The project has one top-level LICENSE authority and uses standard Gtk.AboutDialog metadata.
+
+4. Shortcuts
+   Mature editors project accelerators through their existing command/action authority. Graphium adds no
+   keyboard manager or chord subsystem; the two G15-S4 accelerators remain in the pre-existing CommandSpec
+   authority with permanent negative collision oracles.
+
+QUANTITATIVE STRUCTURAL ACCOUNTING: G14 -> G15-S5
+=================================================
+Runtime Python modules:     57 -> 57    delta 0
+Runtime Python LOC:      11258 -> 11532 delta +274 (+2.43%)
+Test Python modules:        59 -> 63    delta +4
+Test Python LOC:          4727 -> 5258  delta +531
+Desktop harness/scenario files: 16 -> 16 delta 0
+Desktop harness/scenario LOC: 1123 -> 1160 delta +37
+Changed runtime modules relative to G14: 7/57
+New import roots/dependencies relative to G14: 0
+
+Per-slice runtime LOC direction:
+  G15-S1: +25
+  G15-S2:  -8
+  G15-S3: +248
+  G15-S4:   0
+  G15-S5:  +9
+  ----------------
+  TOTAL:  +274
+
+The growth is concentrated rather than scattered. S3 accounts for 248/274 added runtime lines and is confined
+entirely to the two pre-existing spelling owners. S2 is demonstrably net-reductive. S4 changes accelerator
+values without runtime LOC growth. S5 adds only metadata/About projection.
+
+CHANGED RUNTIME MODULES RELATIVE TO G14
+=======================================
+  graphium/adapters/gtk/application.py
+  graphium/adapters/gtk/dialogs.py
+  graphium/adapters/gtk/spelling.py
+  graphium/adapters/gtk/window.py
+  graphium/application/commands.py
+  graphium/infrastructure/hunspell_session.py
+  graphium/product.py
+
+All other runtime modules are byte-identical to G14, including the document/domain/save/recovery architecture
+outside the seven bounded owners above.
+
+STRUCTURAL GATES
+================
+34/34 PASS:
+  RUNTIME_MODULE_TOPOLOGY_UNCHANGED
+  NO_NEW_IMPORT_ROOTS
+  COMPOSITION_AUTHORITY_BYTE_IDENTICAL
+  ARCHITECTURE_AUTHORITY_BYTE_IDENTICAL
+  PERSISTENCE_AUTHORITY_UNCHANGED_VIEW_SETTINGS
+  PERSISTENCE_AUTHORITY_UNCHANGED_VIEW_SETTINGS_STORE
+  NO_GUI_LANGUAGE_SELECTOR_OR_I18N_SUBSYSTEM
+  NO_DICTIONARY_PERSISTENCE_KEY
+  PREFERENCES_RUNTIME_ERADICATED
+  PREFERENCES_COMMAND_ERADICATED
+  DIRECT_TAB_CONTROLS_SINGLE_AUTHORITY
+  ICON_FILESET_BOUNDED
+  ICON_SIZE_SET_EXACT
+  GENERIC_ICON_ERADICATED
+  ABOUT_HAS_NO_SECOND_ICON_AUTHORITY
+  NO_RESOURCE_FRAMEWORK_FOR_ICON
+  HUNSPELL_DISCOVERY_ONLY_IN_SPELL_BOUNDARY
+  SPELL_SINGLE_EXECUTOR
+  SPELL_DISCOVERY_BOUNDED
+  SPELL_EXPLICIT_DICTIONARY_ARGV
+  SPELL_NO_SHELL_EXECUTION
+  TRANSFORM_SHORTCUTS_EXACT
+  FORBIDDEN_COLLISION_ORACLES_PRESENT
+  SINGLE_REPOSITORY_LICENSE_AUTHORITY
+  GPL3_OR_LATER_GRANT_PRESENT
+  LEGAL_METADATA_SINGLE_PRODUCT_AUTHORITY
+  REPOSITORY_URL_UNCHANGED
+  NO_CUSTOM_LEGAL_UI
+  GRAPHIUM_PLUS_RUNTIME_NOT_OPENED
+  RUNTIME_DELTA_ACCOUNTED
+  TEST_DELTA_ACCOUNTED
+  TEST_MODULE_GROWTH_BOUNDED
+  DESKTOP_HARNESS_FILECOUNT_UNCHANGED
+  DESKTOP_HARNESS_LOC_GROWTH_BOUNDED
+
+INTEGRAL LOCAL REGRESSION
+=========================
+Exact cumulative G15-S5 source, bytecode disabled:
+  Behavioral:        190/190 PASS
+  Integration:       176/176 PASS
+  Packaging/Release:  40/40 PASS
+  TOTAL:             406/406 PASS
+
+The previously observed local fake-Hunspell timing sensitivity did not occur in this integral run.
+No failure-specific repair, oracle weakening or product change was made in S6.
+
+T480 / MANUAL NECESSITY AUDIT
+=============================
+A new T480 run for S6 is NOT REQUIRED.
+
+Reason:
+  - S6 introduces no product/test/runtime delta.
+  - S1-S5 have each already obtained the specific real GTK/T480 evidence needed for their changed property.
+  - S5's final T480 source/package identity proves the exact cumulative S1-S5 package remained unchanged.
+  - The integral local 406/406 suite and 34/34 structural audit exercise the cumulative source.
+  - Repeating T480 now would establish no new platform property and conflicts with the binding last-resort
+    T480 policy.
+
+Manual tests required by S6: 0
+
+FINAL DECISION
+==============
+G15_S6_INTEGRAL_REGRESSION=PASS
+G15_S6_STRUCTURAL_AUDIT=PASS
+G15_S6_STRUCTURAL_GATES=34/34_PASS
+G15_S6_MATURE_SOURCE_RECOMPARISON=PASS
+G15_S6_DUPLICATE_AUTHORITY_AUDIT=PASS
+G15_S6_ACCIDENTAL_COMPLEXITY_AUDIT=PASS
+G15_S6_LIGHTWEIGHT_BUDGET=PASS
+G15_S6_NEW_PRODUCT_DELTA=NO
+G15_S6_NEW_T480_REQUIRED=NO
+G15_S6_MANUAL_TESTS=0
+
+G15_NONCANDIDATE_SLICES_COMPLETE=YES
+G15_CANDIDATE=NO
+G15_CANDIDATE_ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+GRAPHIUM_PLUS_OPENED=NO
+
+NEXT GOVERNANCE STEP
+====================
+Candidate must NOT be inferred from this PASS. The next permissible step is a Candidate-readiness/freeze audit
+on the exact cumulative G15 authority, followed only by a separately and explicitly authorized G15 Candidate R1.

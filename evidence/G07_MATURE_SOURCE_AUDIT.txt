@@ -1,0 +1,196 @@
+GRAPHIUM G07 — DIRECT MATURE-SOURCE AUDIT
+Date: 2026-08-16
+Method: direct source only; no web substitution.
+Verdict: PASS
+
+Primary sources inspected:
+  Mousepad 0.7.0
+  FeatherPad master (user-provided archive, SHA recorded separately)
+  gedit master archive
+  GNOME Text Editor main archive
+  L3afpad master
+  Leafpad main
+  Parchment main
+  JOE 4.8 / NEdit as backup-semantics contrasts
+
+===============================================================================
+A. OPEN RECENT
+===============================================================================
+
+Assumption under test:
+  Graphium can add a small MRU file history without creating session restoration or a heavy
+  persistent subsystem.
+
+Mousepad direct evidence:
+  mousepad/mousepad-history.c:154-201
+    recent entry is added to GtkRecentManager; Mousepad also stores language/encoding/cursor.
+  mousepad/mousepad-window.c:3980-4115
+    recent menu is rebuilt dynamically, MRU-sorted, limited, and stale paths may be pruned.
+  mousepad/mousepad-window.c:4540-4558
+    selecting a recent item uses the normal open path; success refreshes history, failure can
+    remove the entry.
+
+FeatherPad direct evidence:
+  featherpad/config.cpp:292-298
+    fixed current recent count, list load, removeDuplicates(), truncate.
+  featherpad/config.cpp:302-303
+    saveLastFilesList is separate from recent history.
+  featherpad/config.cpp:670-678
+    MRU = remove existing path, prepend, truncate.
+  featherpad/fpwin.cpp:631-649 and 1795-1839
+    a dynamic Recently Opened submenu is projected from the stored paths and has Clear Recent.
+
+Contradictory/richer alternatives:
+  Mousepad stores cursor/language/encoding metadata in recent entries.
+  GNOME Text Editor editor-session.c owns recents in a broad EditorSession, persists
+  recently-used.xbel, has privacy/session integration and async worker paths.
+  Those features are useful in larger editors but violate Graphium's G07 scope.
+
+Graphium disposition: ADAPT
+  - product-local MRU path history only;
+  - fixed limit 10 (FeatherPad's mature default is a sufficient lightweight precedent);
+  - normalized absolute LOGICAL path only; no canonical path, inode, cursor, encoding,
+    language, selection, tabs or session restoration in the recent store;
+  - successful Open and successful binding-changing Save As/first Save may touch MRU;
+  - Save a Copy and Save Version Copy NEVER touch MRU;
+  - route selection through existing FileLifecycleController.open_document(path);
+  - no filesystem scan merely to render the menu; a stale entry may fail through normal Open
+    and remain until explicit Clear Recent;
+  - persistent store is a tiny atomic XDG-state JSON file, lazy-loaded, mode 0600;
+  - no Recent preference UI in G07.
+
+===============================================================================
+B. SAVE A COPY / SAVE VERSION COPY
+===============================================================================
+
+Assumption under test:
+  Explicit non-binding copies can be a Graphium trust feature without becoming an automatic
+  backup system, revision database or alternate Save state machine.
+
+Direct mature evidence / contradiction:
+  Current Mousepad/FeatherPad/L3afpad/Leafpad/Parchment sources do not establish a common
+  first-class Save-a-Copy + Version-Copy pair.
+  gedit historical source history records:
+    plugins/ChangeLog-20051212:171-174 — a Save a Copy plugin was added.
+    ChangeLog-20090418:4491-4495 — the plugin was later removed and never ported to the newer
+    plugin architecture.
+  Mousepad org.xfce.mousepad.gschema.xml and JOE/NEdit sources instead expose automatic
+  backup-on-save semantics. That is explicitly a DIFFERENT product contract.
+
+Graphium consequence:
+  The mature corpus does not justify a version-management subsystem. It does, however,
+  falsify the idea that automatic backup is equivalent to explicit non-binding copies.
+
+Graphium disposition: ADOPT, but only under strict trust semantics
+  - explicit user action only;
+  - one existing GuardedFileWriter remains the only physical writer;
+  - no automatic backup, retention, timeline, manifest, DB, history browser or cleanup task;
+  - copy result never rebinds the active document, never moves savepoint, never changes
+    Undo/Redo history and never changes Saved/Modified relation;
+  - use active document representation profile; mixed-EOL copy requires the same explicit
+    normalization consent because the live buffer cannot reconstruct original mixed EOLs;
+  - target collision/retarget races fail closed.
+
+===============================================================================
+C. PROPERTIES + CHECK NOW
+===============================================================================
+
+Assumption under test:
+  A compact Properties surface can expose accepted file facts and a trustworthy explicit disk
+  check without adding a monitor or turning properties into a settings panel.
+
+Mature evidence:
+  GNOME Text Editor editor-properties.c exposes a consolidated properties object containing
+  name/directory/encoding/newline/statistics plus mutable editor settings. This validates the
+  value of a single properties home but is broader than Graphium should copy.
+  FeatherPad source repeatedly distinguishes symlink/canonical targets using QFileInfo
+  isSymLink()/canonicalFilePath()/symLinkTarget().
+  Mousepad tracks read-only state and symlink/physical-file behavior in its file/lifecycle
+  layers.
+
+Contradictory alternative:
+  GNOME Text Editor's properties surface also owns language, indent style/width and other live
+  configuration. Importing that model would duplicate future Preferences/Document commands and
+  violate Graphium's single-surface rule.
+
+Graphium disposition: ADAPT
+  - read-only compact facts, not a settings panel;
+  - accepted logical path; resolved/canonical target when meaningfully different; accepted
+    size and modification observation; encoding/BOM/EOL; Saved/Modified; writable/read-only;
+    link count and a clear hard-link warning when nlink > 1;
+  - explicit Check Now performs a fresh strong read-only observation;
+  - Check Now compares dev/inode + resolved target + complete disk observation + raw SHA-256;
+  - Check Now never changes accepted DocumentFileState, savepoint, binding, buffer or history;
+  - no Reload action in G07; Reload remains G11;
+  - no automatic monitor in G07.
+
+Frozen Check Now classifications:
+  UNCHANGED
+  CONTENT_CHANGED
+  METADATA_CHANGED
+  REPLACED_OR_RETARGETED
+  MISSING
+  UNAVAILABLE_OR_UNSTABLE
+
+Every result except UNCHANGED is non-authorizing: ordinary Save continues to rely on the
+accepted baseline and its existing fail-closed guard.
+
+===============================================================================
+D. STATISTICS
+===============================================================================
+
+Assumption under test:
+  Useful document/selection counts can be explicit and cheap without live analytics.
+
+L3afpad direct evidence:
+  src/callback.c:129-156 calls file_stats() only when Statistics is activated and displays a
+  modal result.
+  src/file.c:239-286 captures current selection and full text then computes total/selection
+  chars, words and lines.
+
+Historical gedit direct evidence:
+  plugins/docinfo/gedit-docinfo-plugin.c:139-203 computes document lines/words/chars on dialog
+  activation; 205-270 computes selection counts; 400-430 opens/presents the dialog and updates
+  the data.
+
+GNOME Text Editor contradictory richer evidence:
+  src/editor-document-statistics.c:28-40 has queued reload state;
+  lines 257-325 compute in a worker;
+  lines 329-355 snapshot full buffer and launch a thread;
+  lines 366-390 queue re-computation after a timeout.
+  This design suits a live properties panel but is unnecessary for Graphium G07.
+
+Graphium disposition: ADAPT L3afpad/gedit; REJECT GNOME live-worker model
+  - Document -> Statistics… only;
+  - one explicit live-buffer snapshot when command is invoked;
+  - no timer, worker, cache, signal-driven recount or status-bar count;
+  - pure GTK-free O(n) calculation;
+  - exact displayed counts: Lines, Words, Characters for document; same for non-empty selection;
+  - empty text => 0 lines / 0 words / 0 characters;
+  - word = maximal run of Unicode characters for which str.isspace() is false;
+  - character = Python Unicode code point in the normalized in-memory buffer;
+  - line = 0 for empty, otherwise newline count + 1;
+  - do NOT display a byte count because normalized in-memory text bytes are not necessarily the
+    active on-disk encoding/EOL byte representation.
+
+===============================================================================
+E. LIGHTWEIGHT FALSIFICATION
+===============================================================================
+
+Leafpad and Parchment provide negative pressure: targeted source audit does not reveal a broad
+recent/session/version/properties analytics platform. L3afpad adds Statistics in a direct,
+command-time form. Graphium therefore adopts only capability-sized authorities.
+
+Rejected for G07:
+  session restoration
+  last-open tab/document sets
+  cursor restoration
+  global GtkRecentManager dependency
+  DB / XBEL session database
+  automatic backups
+  version timelines or version inventories
+  background index/scanner
+  filesystem monitor
+  live statistics worker/timer
+  mutable encoding/EOL controls inside Properties
+  duplicate preference/settings surfaces

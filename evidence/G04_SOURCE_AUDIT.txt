@@ -1,0 +1,98 @@
+Graphium G04 — REBUILT CURRENT SOURCE AUDIT
+Date: 2026-08-14
+Baseline: published G03 e7045e0ce1c79da71c9968bdfa052df25a5378b7
+Tree: 42fe5340e1181199db86ed69cfa93b4735e45666
+
+Published authorities that remain binding
+=========================================
+G01
+  document_identity / document_loader / document_serialization
+  => accepted file identity + strict content representation.
+
+G02
+  DocumentSession state-ID Saved/Modified relation
+  => preserved as semantic authority.
+  Historical TextHistory/EditorTransactionController remain regression material but are NOT
+     the active G04 native GTK history/composition after explicit architecture review.
+
+G03
+  DocumentSaveService + sole GuardedFileWriter
+  => every physical Save/Save As remains routed through the one published writer authority.
+
+Rebuilt G04 active boundaries
+=============================
+graphium/domain/edit_history.py
+  DeltaHistory: changed-payload journal, structural coalescing, monotonic state IDs.
+
+graphium/application/native_editor.py
+  NativeEditorController: GTK-free coordinator between mutable buffer, delta history and
+  DocumentSession. Ordinary native edits advance identity without full-buffer capture.
+
+graphium/application/document_session.py
+  adds text_editor_state_id synchronization marker while preserving G02 dirty relation.
+
+graphium/application/file_lifecycle.py
+  New/Open/Save/Save As/Quit sequencing; unsaved prompts do not capture the full buffer;
+  Save performs one explicit current-text synchronization before G03.
+
+graphium/adapters/gtk/editor_buffer.py
+  GtkTextBuffer delta replay/capture adapter; verifies expected deletion text on replay.
+
+graphium/adapters/gtk/window.py
+  thin widgets/actions/signals/title; begin/end-user-action + insert/delete recording;
+  no native history timer; lazy Help; no toolbar.
+
+graphium/adapters/gtk/application.py
+  NON_UNIQUE one-process/one-window/one-document topology; multi-file CLI fan-out.
+
+tools/g04_performance.py
+  exact Graphium FIRST_EDITABLE inherited-pipe protocol.
+
+tools/g04_comparator_proxy.py
+  common external FIRST_VISIBLE comparator metric.
+
+tools/g04_topology_gate.py
+  True desktop process/window topology check.
+
+Safety invariants
+=================
+- no direct document writer marker in GTK adapters;
+- no G04 second file identity/session authority;
+- Save/Save As remain bind-after-commit / stale-fail-closed via G03;
+- Open loads before replacement;
+- no implicit content normalization in G04;
+- no whole-document capture per native edit;
+- no semantic Undo timer;
+- no GtkSourceView/tabs/toolbar/syntax/projects;
+- Help content is local and loaded on explicit command only.
+
+Failure-specific renderer-safety extension
+==========================================
+graphium/application/renderability.py
+  GTK-free content-neutral admission policy.  A file may be valid G01 text but still be
+  outside the bounded interactive Gtk.TextView renderer contract.  The current G04 budget
+  is 20,000 Unicode characters per logical line.
+
+graphium/application/file_lifecycle.py
+  validates loaded text after G01 decoding but before NativeEditor/Buffer installation;
+  over-budget Open leaves the current document/session/history exact.
+
+graphium/adapters/gtk/window.py
+  pre-default insert-text and delete-range guards prevent a currently safe document from
+  being edited/pasted/joined into a pathological huge-line state.  Rejected mutations are
+  stopped before GtkTextBuffer's default mutation and do not enter DeltaHistory.
+
+tools/g04_true_gtk_gate.py
+  separates realistic file size from pathological line width: a ~1 MiB multiline document
+  is scrolled to the actual end and edited/undone, while an over-budget logical line is
+  rejected before buffer installation and an over-budget insertion is blocked.
+
+Additional safety invariants
+============================
+- document byte size alone is not an interactive-renderability oracle;
+- large multiline file support and huge-line rejection are separate requirements;
+- no hidden truncation marker, automatic wrap, automatic newline insertion or content
+  normalization is permitted as a renderer workaround;
+- no read-only fallback in the same Gtk.TextView is claimed safe for the observed failure
+  class; exact paged/streamed viewing is future architecture, not G04;
+- future line-budget changes require explicit renderer qualification rather than guesswork.

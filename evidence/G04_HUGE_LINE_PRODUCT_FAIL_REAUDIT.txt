@@ -1,0 +1,126 @@
+GRAPHIUM G04 — VALID MANUAL PRODUCT FAIL / PATHOLOGICAL HUGE-LINE RE-AUDIT
+Date: 2026-08-14
+Baseline: published G03 e7045e0ce1c79da71c9968bdfa052df25a5378b7 / tree 42fe5340e1181199db86ed69cfa93b4735e45666
+Failed seven-editor candidate tree: caa1dc06f3e937a14ceb1499bbe3a9f73d1b6260
+
+USER OBSERVATION
+----------------
+The final manual large-file group initially appeared to pass after Ctrl+End + Z, but the
+one-mib.txt Graphium window later hung. This is a valid product responsiveness FAIL. The
+rest of the manual validation stops at that observation; no later group result is reused
+as certification.
+
+EXACT FIXTURE FACT
+------------------
+The failed runner generated one-mib.txt as:
+  'a' * (1024 * 1024)
+with no newline. It was therefore not merely a 1 MiB file; it was one logical line of
+1,048,576 characters. The automatic True-GTK gate used the same pathological fixture but
+only inserted programmatically at the end and did not force the visible GtkTextView
+viewport to navigate/render the line end. The oracle therefore failed to reproduce the
+manual Ctrl+End path.
+
+ASSUMPTION UNDER TEST
+---------------------
+Earlier G04 assumption:
+  delta-history scalability on a 1 MiB buffer was enough to establish interactive large-
+  file usability.
+
+FALSIFYING EVIDENCE
+-------------------
+1. User T480 observation falsified it: the delta journal remained available but the GTK
+   window became unresponsive on the million-character logical line.
+2. GNOME GtkTextView/GtkSourceView issue history explicitly records severe long-line
+   behavior and describes lines around 20,000 characters as outside the design's useful
+   comfort range; earlier gedit issue history likewise reports very slow selection/editing
+   on 20,000-column lines. This is renderer/layout evidence, not Undo-storage evidence.
+3. FeatherPad direct-source evidence previously retained from loading.cpp guards logical
+   line width: after 500,000 characters it substitutes a HUGE LINE TRUNCATED marker and
+   forces the document uneditable. ADOPT the existence of an explicit renderer-safety
+   policy; REJECT its content mutation/truncation semantics for Graphium.
+4. NEdit source/textDisp.c defines MAX_DISP_LINE_LEN 1000 for its custom renderer, showing
+   that a mature editor can bound display work independently from document semantics.
+   NEdit's number is implementation-specific and is NOT copied as a Graphium document limit.
+5. JOE 4.8 joe/b.c disables syntax highlighting/context display when files exceed 450,000
+   lines or 16,000,000 bytes. ADOPT the broader principle that expensive presentation
+   capabilities may degrade for pathological input rather than compromising responsiveness.
+6. Leafpad, L3afpad and Airpad use GtkTextView and permit GTK_WRAP_NONE, but the inspected
+   source contains no explicit huge-line protection. They are therefore not positive
+   oracles for this failure class.
+7. Mousepad uses GtkSourceView. No explicit huge-line admission guard was found in the
+   inspected 0.7.0 source, so it is not evidence that plain GtkTextView safely supports
+   million-character logical lines.
+
+ROOT-CAUSE CLASSIFICATION
+-------------------------
+PRIMARY_CLASS=GTK_TEXT_RENDERABILITY_PATHOLOGY
+DELTA_HISTORY_FAILURE=NO
+FILE_SIZE_ALONE_IS_CAUSE=NO
+PATHOLOGICAL_SINGLE_LOGICAL_LINE=YES
+AUTOMATED_ORACLE_COVERAGE_DEFECT=YES
+
+The valid product failure and the oracle defect coexist: the product admitted a document
+shape that can make its chosen renderer unresponsive, and the automated gate did not
+exercise the real viewport-navigation path.
+
+G04 REPAIR CONTRACT
+-------------------
+Graphium separates:
+  LARGE MULTILINE DOCUMENT
+from:
+  PATHOLOGICAL HUGE LOGICAL LINE.
+
+1. A realistic 1 MiB multiline document remains editable and retains ordinary delta Undo.
+2. G04 freezes an initial interactive-rendering safety budget of 20,000 Unicode characters
+   per logical line. This is a Graphium product budget derived conservatively from the
+   chosen GtkTextView renderer and mature evidence; it is NOT claimed to be a universal GTK
+   hard limit. Future qualification may change it only through an explicit audited work item.
+3. Text exceeding the budget is still valid Graphium-loadable plain text at the G01 layer,
+   but G04 refuses to install it in the interactive GtkTextView.
+4. Refusal occurs before active-buffer/session/history replacement. The current document
+   remains exact.
+5. The source file is never truncated, rewritten, wrapped, normalized or otherwise changed
+   to make it renderable.
+6. G04 does NOT offer a read-only GtkTextView fallback for the same pathological text,
+   because rendering/navigation itself is the failure class. A future exact paged/streamed
+   viewer would require separate architecture and is outside G04.
+7. The same budget is enforced prospectively during native insertion/paste and during a
+   deletion that would join line fragments beyond the budget. Unsafe mutation is stopped
+   before GtkTextBuffer's default insert/delete handler.
+8. A blocked interactive edit gives explicit user-visible warning and does not advance the
+   delta history/savepoint identity.
+9. True-GTK is changed to:
+   a. use a realistic ~1 MiB multiline fixture;
+   b. place/scroll the cursor at the real end, edit one character, verify Undo;
+   c. verify a >20,000-character logical-line Open is refused before buffer installation;
+   d. verify a pathological paste is blocked before buffer mutation.
+10. Human validation uses the realistic multiline 1 MiB fixture. The huge-line refusal is
+    automated because reopening the pathological content in GtkTextView would recreate the
+    exact responsiveness hazard the guard is designed to prevent.
+
+ADOPT / ADAPT / REJECT
+----------------------
+ADOPT:
+  explicit renderer-safety admission policy;
+  capability degradation for pathological input;
+  separate realistic large-file and huge-line tests.
+ADAPT:
+  Graphium uses a conservative 20,000-char interactive line budget specific to GtkTextView;
+  refusal leaves the current document untouched.
+REJECT:
+  silent truncation;
+  inserted marker text;
+  automatic line wrapping as a hidden repair;
+  automatic line-break insertion;
+  disabling Undo as the response;
+  replacing GtkTextView with GtkSourceView in G04;
+  removing the pathological-input test;
+  treating file byte size alone as sufficient renderability evidence.
+DEFER:
+  exact streamed/paged read-only viewing of pathological generated/minified lines.
+
+FROZEN MACHINE-READABLE MARKERS
+-------------------------------
+G04_INTERACTIVE_LINE_BUDGET_CHARS=20000
+G04_PATHOLOGICAL_LINE_POLICY=REFUSE_BEFORE_GTK_BUFFER_INSTALL
+G04_PATHOLOGICAL_LINE_CONTENT_MUTATION=FORBIDDEN

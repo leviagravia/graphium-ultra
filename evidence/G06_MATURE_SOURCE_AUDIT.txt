@@ -1,0 +1,160 @@
+GRAPHIUM G06 — FALSIFICATION-ORIENTED MATURE-SOURCE AUDIT
+Date: 2026-08-15
+Sources audited directly: Leafpad source, L3afpad source, Mousepad 0.7.0 source.
+Web substitute: NONE.
+
+======================================================================
+1. LINE NUMBERS WITHOUT GTKSOURCEVIEW
+======================================================================
+ASSUMPTION UNDER TEST
+Graphium can keep plain Gtk.TextView and still provide mature line numbers without a
+parallel scrolling widget or document-wide line index.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Mousepad binds its “show-line-numbers” setting directly to its MousepadView, which is a
+GtkSourceView-based editor. The mature alternative is therefore to adopt GtkSourceView
+and receive gutter support as part of the editor widget.
+
+ALTERNATIVE MATURE MODEL
+Leafpad src/linenum.c explicitly says its implementation was taken from gedit/
+GtkSourceView/testtext, yet implements the capability on GtkTextView itself. It obtains
+the first line from y coordinates, walks forward only until the visible y2 boundary, and
+uses GTK_TEXT_WINDOW_LEFT via gtk_text_view_set_border_window_size(). L3afpad retains the
+same architecture in its Cairo draw path: it rejects draws outside the left border,
+converts window/buffer y coordinates and draws visible logical line numbers.
+
+GRAPHIUM CONSEQUENCE
+The direct mature evidence is stronger than the initial concern that custom line numbers
+necessarily imply a new editor subsystem. The safe model is narrow: native left border
+window + visible logical-line traversal. The T480 R2 probe independently qualified this
+exact architecture at 1 MiB/10 MiB and with Word Wrap.
+
+DECISION
+ADOPT — Gtk.TextView native LEFT border-window gutter, visible logical lines only.
+REJECT — GtkSourceView migration, parallel scrolling widget, background line index/cache.
+
+======================================================================
+2. WORD WRAP
+======================================================================
+ASSUMPTION UNDER TEST
+Word Wrap should be a direct low-cost View command rather than a formatting operation.
+
+CONTRADICTORY / STRESSING EVIDENCE
+A richer editor could expose multiple wrap algorithms, columns, margins and per-language
+behaviour, increasing both UI and persistent state.
+
+ALTERNATIVE MATURE MODEL
+Leafpad and L3afpad expose Word Wrap directly beside Font and Line Numbers. Mousepad’s
+mousepad_view_set_word_wrap() is only a mapping to GTK_WRAP_WORD_CHAR or GTK_WRAP_NONE.
+
+GRAPHIUM CONSEQUENCE
+No extra wrapping engine or formatting model is justified.
+
+DECISION
+ADOPT — native Gtk.WrapMode.WORD_CHAR / NONE, persistent direct View setting.
+
+======================================================================
+3. FONT AND ZOOM
+======================================================================
+ASSUMPTION UNDER TEST
+Font family/size may be persistent while Zoom remains a transient magnification layer.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Mousepad changes font size through its view and could be read as evidence that zoom and
+base-font configuration need not be separated. Older Leafpad directly modifies widget
+font state.
+
+ALTERNATIVE MATURE MODEL
+Mousepad 0.7.0 converts a Pango font description to CSS, installs a GtkCssProvider on the
+text view, and provides increase/decrease/reset font-size actions. This validates CSS as
+the modern GTK3 presentation path while showing that quick size changes need not mutate
+document state.
+
+GRAPHIUM CONSEQUENCE
+Graphium keeps a cleaner semantic split: configured Font is persistent; Zoom is transient
+and always relative to that base, with Reset=100%. Deprecated override_font/modify_font
+APIs are not adopted.
+
+DECISION
+ADAPT — CSS-provider font application; persistent base Font + transient Zoom.
+
+======================================================================
+4. COMPACT STATUS
+======================================================================
+ASSUMPTION UNDER TEST
+A small always-cheap status surface improves trust without turning Graphium into an
+analytics dashboard.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Mousepad has a richer statusbar containing filetype/language, encoding, cursor position
+and overwrite state, and uses it for tooltips/interactions. A direct copy would expand
+Graphium’s concepts and potentially couple status to syntax/language infrastructure.
+
+ALTERNATIVE MATURE MODEL
+Mousepad’s cursor and encoding status are event/projected fields, not evidence that live
+word/character counting is required. Its richer language/overwrite fields serve features
+Graphium deliberately does not own.
+
+GRAPHIUM CONSEQUENCE
+Graphium adopts only high-value trust facts already known without scanning: line/column,
+encoding/EOL and Saved/Modified. Statistics remains on-demand in G07.
+
+DECISION
+ADAPT — compact event-driven status; REJECT eager/live Statistics in G06.
+
+======================================================================
+5. TOOLBAR
+======================================================================
+ASSUMPTION UNDER TEST
+A toolbar might make common commands easier to discover without meaningful bloat.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Mousepad has persistent toolbar-visible settings and dedicated fullscreen visibility
+settings. In its much broader command surface, toolbar duplication can be justified.
+
+ALTERNATIVE MATURE MODEL
+Leafpad and L3afpad source contain no GtkToolbar/gtk_toolbar implementation while still
+providing direct Font/Word Wrap/Line Numbers menu commands. They demonstrate a mature
+lightweight editor model where a conventional menu is enough.
+
+GRAPHIUM CONSEQUENCE
+Graphium’s v1 command set remains small and conventional. A toolbar would mostly duplicate
+File/Edit/Search actions while adding visibility state, layout and Help/test obligations.
+
+DECISION
+REJECT v1 — fails Lightweight Budget for Graphium’s target surface.
+
+======================================================================
+6. FULL SCREEN
+======================================================================
+ASSUMPTION UNDER TEST
+Full Screen can be admitted as a near-zero-state transient View command.
+
+CONTRADICTORY / STRESSING EVIDENCE
+Mousepad persists window fullscreen and separately configures toolbar/statusbar visibility
+in fullscreen, showing how this feature can grow additional policy state.
+
+ALTERNATIVE MATURE MODEL
+GTK already owns fullscreen/unfullscreen. The extra Mousepad policy is optional product
+complexity, not a technical requirement.
+
+GRAPHIUM CONSEQUENCE
+Graphium does not persist fullscreen and adds no separate fullscreen toolbar/status policy.
+Window state only synchronizes the action while the process is alive.
+
+DECISION
+ADAPT — transient F11 only.
+
+======================================================================
+7. LIGHTWEIGHT-BUDGET SYNTHESIS
+======================================================================
+ADOPT: Word Wrap, Line Numbers, Compact Status, Font, Zoom, Full Screen.
+REJECT_V1: Toolbar.
+DEFER_G10: Appearance.
+DEFER_G07: full Statistics/live word-character concepts.
+
+MATURE_AUDIT=PASS
+CONFIRMATION_BIAS_COUNTERMEASURE=PASS
+The audit deliberately considered Mousepad’s richer GtkSourceView/toolbar/status model as
+a materially different mature alternative rather than searching only for evidence that
+matched Graphium’s prior direction.

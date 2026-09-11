@@ -1,0 +1,35 @@
+GRAPHIUM G03 — DIRECT SOURCE AUDIT
+Date: 2026-08-14
+Baseline: G02 published b91af48a5688772ceffc7eac202c68e1815d7a36
+Tree: 3e5b24263d4086a3eccf4897b038b8992703db79
+
+Graphium authorities read before G03 implementation:
+- graphium/domain/document_identity.py
+- graphium/domain/document_serialization.py
+- graphium/infrastructure/document_loader.py
+- graphium/domain/history.py
+- graphium/application/document_session.py
+- graphium/application/editor_transaction.py
+- graphium/composition.py
+- VERIFY_GRAPHIUM.py
+- G00/G01/G02 regression tests and the three canonical documents.
+
+Findings:
+1. G01 already owns exact accepted disk representation: logical/canonical binding, object ID,
+   content SHA-256, encoding, BOM and line-ending profile.
+2. G02 already owns the one active document session and exact state-ID savepoint relation.
+3. No authoritative runtime filesystem writer existed before G03.
+4. G03 therefore must add exactly one writer and a thin save service, not another session.
+5. Save and Save As can remain fully GTK-free; chooser/consent belongs to G04.
+6. Live external monitoring remains G11 and must not become Save authorization.
+7. Quick-edit target users benefit from invisible safety; no extra visible workflow is needed.
+
+Direct Calamus W116 source re-read for semantic adaptation:
+- calamus_document_save.py sha256 921378e5e89ae49c3226534d6bcd8b46a4eee2895b49d1944f120e34884f911f
+- calamus_guarded_file_writer.py sha256 7cbc782325447a946f4a0f231b0861a77f1eb99b29b92c5f69626a1355d68564
+- calamus_document_session_controller.py sha256 72b443c1802e20191522847c69d70596ddbea6134c7ed9128bd0e93c8e3f0e18
+- calamus_document_session.py sha256 c2bd6e591dc02b3ce6ccb8b60a30bb178d19683ec4697c92e0bb337bb4d5af79
+- calamus_document_serializer.py sha256 814a65449240f10627c0685ab28b269bb5c6bb1a17ee199a70b723560945a943
+- calamus_document_identity.py sha256 f53291c156ed39dca0acec2dd8d7f29491b1dfde8971dbeed76a1a7972c7613a
+
+Decision: selective semantic adaptation only. Graphium runtime imports from Calamus remain forbidden.

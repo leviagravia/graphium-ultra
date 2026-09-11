@@ -1,0 +1,176 @@
+GRAPHIUM G02 — DIRECT MATURE-SOURCE AUDIT
+=========================================
+Date: 2026-08-14
+Work item: G02 — History / Editor Transaction / Savepoint Session
+Baseline: G01 published commit bf7878c3cdc5cf895b0ffba86b854860c34936a4
+Baseline tree: 2334e0c71f01a1b0a30bcb9298911c7c0cafe042
+Status: DIRECT SOURCE AUDIT COMPLETE / CONTRACT INPUT
+
+PURPOSE
+-------
+Audit mature text-editor behavior specifically for Undo/Redo grouping, savepoint-aware
+Saved/Modified projection, branch behavior, cursor/selection restoration and separation
+of external-file state from text-history state. This audit does not authorize tabs,
+syntax highlighting, IDE features or visible history UI.
+
+TARGET USER BOUNDARY
+--------------------
+Graphium targets Leafpad/L3afpad/Mousepad-style quick-edit users. Therefore the mature
+behavior to adopt is invisible correctness: ordinary Undo/Redo and a trustworthy
+Saved/Modified state. Complex history UI, persistent undo, document registries and
+multi-document models are rejected from G02.
+
+1. SCINTILLA — UndoHistory
+--------------------------
+Direct files:
+  UndoHistory.cxx
+    SHA-256 5cc9a3c549f121ebecbc4c5dca768a8441683cabc52f80055698205044cca251
+  UndoHistory.h
+    SHA-256 1f0606f3ff5092676d217e5715e9eee5d7b4df05d3d6bbfe1d80ab8a0b8975d6
+
+Direct findings:
+  - Undo history models user operations rather than every raw mutation.
+  - BeginUndoAction()/EndUndoAction() provide explicit compound-operation grouping.
+  - SetSavePoint() stores the current action boundary and IsSavePoint() compares it with
+    the current action.
+  - when a new edit occurs before the old savePoint, the old positional savePoint is
+    invalidated (savePoint = -1) rather than falsely reporting clean state.
+  - typing/deletion may coalesce into one user operation.
+
+Decision:
+  ADOPT
+    * explicit savepoint relation to historical state;
+    * logical grouping boundary;
+    * branch-after-Undo cannot false-clean against the old savepoint.
+  ADAPT
+    * Graphium uses stable positive state IDs instead of exposing Scintilla action index;
+    * state IDs are never reused, including after rollback/pruning.
+  DEFER
+    * GTK/native edit coalescing timing to G04 adapter.
+
+2. GNOME TEXT EDITOR — EditorDocument
+-------------------------------------
+Direct file:
+  editor-document.c
+    SHA-256 670f7a2a3fdc3a0d695548e3c2ba76f186c647132f9f29719ba2f618c7593ab8
+
+Direct findings:
+  - GtkTextBuffer :modified is kept conceptually distinct from externally_modified.
+  - document lifecycle explicitly saves/restores both insert and selection-bound marks.
+  - load completion sets modified state deliberately instead of assuming all loaded text
+    is user editing.
+  - alternate/draft save paths avoid APIs that would incorrectly perturb the undo-stack
+    position or external-modification state.
+
+Decision:
+  ADOPT
+    * dirty text state is separate from external-file state;
+    * insertion and selection-bound positions are exact restorable editor state;
+    * document replacement/open is not an ordinary user edit.
+  ADAPT
+    * Graphium G02 remains GTK-free; GtkTextBuffer marks/events are a G04 adapter concern.
+  REJECT
+    * draft/session machinery for Graphium v1.
+
+3. GEDIT — GtkSourceBuffer/GtkTextBuffer history client
+-------------------------------------------------------
+Direct file:
+  gedit-document.c
+    SHA-256 17ed482a7006fe397134fcc6742a4fc6ddac9438aa3c894f7995e6bfe1acf65d
+
+Direct findings:
+  - GtkSourceBuffer has an explicit maximum undo level policy.
+  - multi-mutation application operations are enclosed in
+    gtk_text_buffer_begin_user_action()/end_user_action().
+  - modified state is set at lifecycle boundaries rather than inferred from a UI event.
+
+Decision:
+  ADOPT
+    * bounded history;
+    * one logical operation should be one undoable user action.
+  ADAPT
+    * Graphium application/domain grouping is toolkit-free in G02;
+    * G04 will map GtkTextBuffer user-action boundaries into the G02 controller.
+
+4. GEANY — Scintilla integration
+--------------------------------
+Direct file:
+  document.c
+    SHA-256 46abdb3f0ffd3858efcab6a7d0af33d3b835c32e12f3f21be74a1a205a4309e3
+
+Direct findings:
+  - Geany calls Scintilla savepoint at accepted load/save synchronization boundaries.
+  - modified state is queried from Scintilla rather than maintained as an unrelated
+    application boolean.
+  - application metadata undo can be layered separately from core text undo.
+
+Decision:
+  ADOPT
+    * savepoint is established only at an accepted synchronization/save boundary.
+  REJECT G02
+    * extra metadata undo stack; Graphium quick-edit scope needs only text editor state.
+
+5. CALAMUS W116 — selective source extraction
+---------------------------------------------
+Direct published W116 files read:
+  calamus_history.py
+    SHA-256 eec76da61c78a141f743432f4505d0d6570a90f9960d1ff3a18291b3349cf7d4
+  calamus_editor_transaction.py
+    SHA-256 fab2e80320b2ce3ab1ab1e9f5b6a0ba950a899214cee5dd86f3d27f9f9dce911
+  calamus_document_session.py
+    SHA-256 c2bd6e591dc02b3ce6ccb8b60a30bb178d19683ec4697c92e0bb337bb4d5af79
+  calamus_document_session_controller.py
+    SHA-256 72b443c1802e20191522847c69d70596ddbea6134c7ed9128bd0e93c8e3f0e18
+  calamus_history_runtime.py
+    SHA-256 849a61e17d9cc1ba0df8dea33ed2010fc9e14deaaf95537474c0e914701074ff
+  calamus_editor_buffer_adapter.py
+    SHA-256 12a828525f988fac25d5cd3e40e4741555e5a2435a7a3787ea281ab7df3c95c6
+
+Retained lessons:
+  - non-reused state identity rather than sticky dirty boolean;
+  - caret/selection-only updates preserve text-state identity;
+  - branch-after-Undo discards redo without identity reuse;
+  - buffer/history/session rollback is one transaction concern;
+  - toolkit mechanics belong behind a buffer adapter.
+
+Graphium adaptations:
+  - no Calamus runtime imports;
+  - no Calamus compatibility API;
+  - smaller direct TextHistory + DocumentSession + EditorTransactionController;
+  - state_id participates in HistoryState equality because Graphium has no legacy equality
+    contract requiring identity to be ignored;
+  - monotonic ID allocator is NOT rewound by checkpoint rollback, preventing speculative
+    identity reuse;
+  - buffer rollback failure restores history/session authorities before raising an explicit
+    EditorRollbackError;
+  - limits retain the mature Calamus baseline: 100 steps, 750k chars/snapshot,
+    approx 2.5M aggregate chars.
+
+6. CROSS-SOURCE CONTRACT
+------------------------
+ADOPT:
+  * Saved/Modified is a relation to an exact historical editor state.
+  * Undo/Redo can cross the savepoint in both directions.
+  * new branch after Undo cannot accidentally recreate the old savepoint identity.
+  * user/programmatic compound edits need one logical transaction boundary.
+  * caret and selection direction are restored with history.
+  * external file state is separate from text dirty state.
+  * open/new replacement resets history and is not a fake undo step.
+
+ADAPT:
+  * Graphium represents historical identity with monotonically increasing state IDs.
+  * pending uncommitted native text has no stable state ID and is Modified.
+  * a late save marks the exact written state ID; if current state advanced, it remains
+    Modified.
+
+REJECT / DEFER:
+  * persistent undo across process restarts;
+  * history timeline UI;
+  * metadata undo stack;
+  * tabs/multi-document history;
+  * native GTK event/debounce wiring before G04;
+  * any physical writer before G03.
+
+AUDIT_VERDICT=ADOPT_ADAPT
+NEW_MATURE_SOURCE_UPLOAD_REQUIRED=NO
+G02_HEADLESS_CORE_APPROPRIATE=YES

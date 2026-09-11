@@ -1,0 +1,112 @@
+GRAPHIUM G09 — DESKTOP CANDIDATE R1 CERTIFICATION RECEIPT
+Date: 2026-08-21
+
+STATUS
+G09_DESKTOP_CANDIDATE_R1=DESKTOP_CERTIFIED
+G09_STATUS=DESKTOP_CERTIFIED_PUBLICATION_READY
+PUBLICATION=NOT_AUTHORIZED
+GIT_MUTATION=NO
+
+EXACT PRODUCT IDENTITY
+G09_VERSION=0.0.10-g09
+G09_SOURCE_TREE=92bcae4fcf72684872a9fa675007156bd0a4de3c
+PRODUCT_SOURCE_CHANGE_DURING_MANUAL_REISSUE=NO
+CANDIDATE_R2=NOT_DECLARED
+
+BASELINE AUTHORITY
+G08_PUBLISHED_COMMIT=5d1c342eafbff8b4b38f0656e0dbc1fe315362b4
+G08_PUBLISHED_TREE=6535bf7d560ceaed3e31f407317fde0a8618ba47
+CANONICAL_REPOSITORY=/home/luciano/Projects/graphium-work
+
+PRE-CANDIDATE T480 AUTHORITY
+G09_T480_PRE_CANDIDATE_QUALIFICATION=PASS
+G09_SOURCE_TREE=92bcae4fcf72684872a9fa675007156bd0a4de3c
+CANDIDATE_R1=NOT_DECLARED
+CANDIDATE_ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+FINAL_PHASE=G09_T480_PRE_CANDIDATE_QUALIFICATION_PASS_CANDIDATE_NOT_DECLARED
+
+CANDIDATE R1 AUTOMATED QUALIFICATION
+The original Candidate R1 runner enters manual validation only after all automated lanes pass.
+G09_CANDIDATE_R1_AUTOMATED_20_LANES=PASS
+AUTOMATED_LANES=20/20_PASS
+CANDIDATE_SOURCE_TREE=92bcae4fcf72684872a9fa675007156bd0a4de3c
+
+MANUAL VALIDATION — ORIGINAL R1 RUN
+TEST_1=PASS
+TEST_2=PASS
+TEST_3=PASS
+TEST_4=PASS
+
+Terminal verdict text for some tests was typed before the application process had fully returned to the runner and was subsequently consumed by the runner's PASS/FAIL read. The transcript provides no evidence that those verdict strings entered the Graphium document; the runner accepted the verdicts after APP_CLOSED markers. This is not classified as product input contamination and does not invalidate Tests 1-4.
+
+ORIGINAL TEST 5 STOP — FINAL CLASSIFICATION
+Original runner evidence before the human verdict:
+TRIM_DISK_POSTCONDITION=PASS
+
+The human FAIL was caused by an ambiguous manual oracle that displayed the expected file using escaped newline notation and asked a human to judge an invisible trailing-whitespace property already owned by the runner.
+FINAL_CLASSIFICATION=INVALID_MANUAL_ORACLE_FALSE_NEGATIVE
+PRODUCT_FAIL=NO
+PRODUCT_REPAIR_REQUIRED=NO
+SOURCE_REPAIR=NONE
+
+The original runner's RETIRED_VALID_MANUAL_FAIL marker is superseded for product classification by the source-first/mature-source re-audit and the manual-oracle reissue evidence below. Candidate R1 remains the same authorized candidate line; the reissue does not declare R2 and does not consume an additional attempt.
+
+MANUAL ORACLE REISSUE HISTORY
+Reissue 1 stopped before Graphium launch because of a Bash harness defect:
+FAILURE=test_no_unbound_variable
+CLASSIFICATION=HARNESS_STOP_BEFORE_PRODUCT_LAUNCH
+PRODUCT_FAIL=NO
+NEW_CANDIDATE_ATTEMPT_CONSUMED=NO
+PRODUCT_SOURCE_CHANGE=NO
+
+Reissue 2 corrected only the harness and preserved exact product identity.
+G09_SOURCE_TREE=92bcae4fcf72684872a9fa675007156bd0a4de3c
+PRODUCT_SOURCE_CHANGE=NO
+CANDIDATE_R2=NOT_DECLARED
+NEW_CANDIDATE_ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+
+REISSUE 2 T480 RESULTS
+G09_CANDIDATE_R1_MANUAL_REISSUE_TEST_5=PASS
+G09_CANDIDATE_R1_MANUAL_REISSUE_TEST_6=PASS
+G09_CANDIDATE_R1_MANUAL_REISSUE_TESTS_5_6=PASS
+FINAL_PHASE=G09_CANDIDATE_R1_MANUAL_REISSUE_TESTS_5_6_PASS
+
+COMPOSED MANUAL VERDICT
+MANUAL_TEST_1=PASS
+MANUAL_TEST_2=PASS
+MANUAL_TEST_3=PASS
+MANUAL_TEST_4=PASS
+MANUAL_TEST_5=PASS_REISSUE
+MANUAL_TEST_6=PASS_REISSUE
+G09_DESKTOP_CANDIDATE_R1_MANUAL=PASS tests=6/6
+
+CANDIDATE ATTEMPT ACCOUNTING
+Candidate R1 was declared in the original T480 Candidate run after all preconditions passed.
+CANDIDATE_ATTEMPT_SLOT=1/2
+CANDIDATE_ATTEMPT_CONSUMED=YES attempt=1/2
+REISSUE_ADDITIONAL_ATTEMPT=NO
+CANDIDATE_LINE_ATTEMPTS_USED=1/2
+CANDIDATE_R2=NOT_DECLARED
+
+CERTIFICATION DECISION
+The following evidence composes on the same exact product tree:
+- T480 pre-candidate qualification PASS.
+- Candidate R1 automated qualification 20/20 PASS.
+- Manual Tests 1-4 PASS from original R1 run.
+- Original Test 5 automatic disk postcondition PASS.
+- Test 5 false-negative classified as invalid manual oracle, not product failure.
+- Manual-oracle Reissue 2 Tests 5-6 PASS.
+- No product source change between original R1 and reissue.
+- No new candidate attempt in reissue.
+- No Git mutation.
+
+Therefore:
+G09_DESKTOP_CANDIDATE_R1=PASS
+G09_DESKTOP_CERTIFIED=YES
+DESKTOP_CERTIFIED_SOURCE_TREE=92bcae4fcf72684872a9fa675007156bd0a4de3c
+CANDIDATE_LINE_ATTEMPTS_USED=1/2
+PUBLICATION_FINALIZATION=PENDING_SEPARATE_AUTHORIZATION
+GIT_MUTATION=NO
+FINAL_PHASE=G09_DESKTOP_CANDIDATE_R1_DESKTOP_CERTIFIED

@@ -1,0 +1,969 @@
+GRAPHIUM ULTRA USER GUIDE
+=========================
+
+This guide describes Graphium Ultra 0.0.1.
+
+Graphium Ultra is the cumulative edition built on Graphium Plus. It preserves the same single-document editor, guarded file writing, document identity, recovery, monitoring and representation semantics, then adds the native read-only Markdown Viewer. The inherited Core and Plus behavior is documented below; the final section describes the Ultra-only Viewer.
+
+1. THE BASIC MODEL
+------------------
+Each Graphium invocation opens one window for one document: one process owns one window and one active document. Launching Graphium again gets
+its own process/window; it does not take over an already-open Graphium document. Several
+command-line filenames are fanned out to separate processes/windows.
+
+The title reports the document name and exact savepoint relation:
+
+  Untitled (Saved) — Graphium
+  notes.txt (Modified) — Graphium
+
+Saved/Modified is the relation to one exact saved document state: both the monotonic text-state
+identity and the selected output representation must match. Undoing or redoing to the exact saved
+text state restores Saved only when Encoding and Line Endings also match the saved representation.
+Text equality on a different edit branch is not enough.
+
+2. FILE COMMANDS
+----------------
+New
+  Replaces the active document with a blank document after Save/Discard/Cancel protection
+  when the current document is Modified.
+
+Open…
+  Loads and validates the selected file before replacing the current document. A failed
+  Open leaves the current document untouched.
+
+Save
+  Uses guarded same-directory staging and late target revalidation. An unexpectedly changed
+  or replaced accepted file is not silently overwritten.
+
+Save As…
+  Writes to another path and rebinds the active document only after the physical commit
+  succeeds. Replacing an existing destination requires explicit consent. A successful first
+  Save or binding-changing Save As becomes the newest Recent path. Save As preserves the original Scratchpad
+  and, when the named source has one, copies its saved sidecar bytes to the managed Scratchpad
+  path of the new document. It never moves the original sidecar and never overwrites an existing destination Scratchpad. If the document commit succeeds but companion verification later fails, Graphium will not automatically adopt an unverified destination Scratchpad during that session.
+
+Open Recent
+  Shows at most ten normalized logical file paths in MRU order. Selecting one goes through the
+  same Open and Save/Discard/Cancel protection as Open…. Recent is file history only: Graphium
+  does not restore cursor, encoding, selection, tabs or a prior session. Clear Recent is explicit.
+
+Save a Copy…
+  Writes the exact current live document using the active representation profile but leaves the
+  active document binding, savepoint, Saved/Modified relation, Undo/Redo and Recent unchanged.
+  The active path or another existing path to the same physical file is not a valid copy target.
+
+Save Version Copy…
+  Has the same non-binding semantics. For a named document Graphium creates the next
+  `<stem>_vNNNN<suffix>` in the active logical directory using max(existing)+1. Untitled uses an
+  explicit chooser suggested as `Untitled_v0001.txt`. This is an explicit copy command, not an
+  automatic backup system or version database.
+
+Properties…
+  Shows accepted logical/resolved identity and size/time together with the current selected
+  Encoding/BOM/Line Endings, Saved/Modified, writable state and link count. Check Now performs a fresh strong read-only observation and
+  reports whether the file is unchanged, content-changed, metadata-changed, replaced/retargeted,
+  missing or unavailable/unstable. It never accepts a new baseline or reloads the document.
+
+Quit
+  Protects Modified text with Save/Discard/Cancel.
+
+3. CONTENT NEUTRALITY
+---------------------
+Open and Save are not cleanup commands. Graphium does not silently trim spaces, add a final
+newline, change encoding/BOM, or normalize line endings merely because a file was opened or
+saved.
+
+The current foundation supports strict UTF-8 and BOM-aware UTF-8/UTF-16/UTF-32 families.
+Line endings are represented internally as LF while the accepted external representation
+is retained for Save. Mixed line endings require explicit consent before normalization when
+exact reproduction is no longer possible after editing.
+
+4. UNDO AND REDO
+----------------
+Graphium stores insertion/deletion deltas, not a complete document snapshot per keystroke.
+GTK user-action boundaries and structural continuity define normal edit groups; no wall-clock
+idle timer decides Undo semantics.
+
+Programmatic replacement uses the same delta authority. Replace All is one logical
+Undo step and one editor-state advance. If it cannot be completed safely, Graphium leaves
+buffer/history/savepoint authorities unchanged rather than leaving a partial replacement.
+
+5. EDIT COMMANDS
+----------------
+Undo / Redo
+  Move through native delta history while preserving exact Saved/Modified semantics.
+
+Cut / Copy / Paste / Delete / Select All
+  Use normal GTK editing behavior. The renderer-safety guard remains active for normal
+  typing, paste and deletion.
+
+6. SEARCH AND REPLACE
+---------------------
+Search is current-document and literal. It is intentionally not a regex, project or
+multi-file search platform.
+
+Find… (Ctrl+F)
+  Opens a compact in-window search bar. The query is single-line Unicode text. A suitable
+  single-line editor selection may prefill it. Searching does not modify the document,
+  create Undo history or change Saved/Modified.
+
+Find Next / Find Previous (F3 / Shift+F3)
+  Navigate to the next or previous occurrence and wrap once automatically. The current
+  occurrence is simply the native text selection. There is no eager highlight-all scan or
+  background search index. Once a query is known, F3/Shift+F3 remain real commands
+  even when the search bar is hidden.
+
+Match Case
+  When off, Graphium uses Unicode casefold matching with exact mapping back to original
+  editor character offsets, including length-changing folds such as German sharp-s. When
+  on, matching is exact codepoint literal comparison.
+
+Replace… (Ctrl+H)
+  Expands the same search bar with a single-line replacement field plus Replace and Replace
+  All. Replacement may be empty. Multi-line query/replacement, regular expressions, fuzzy
+  search, Whole Word mode and search-history storage are outside the current product scope.
+
+Replace
+  One activation either replaces the current exact match or acquires the next match and
+  replaces it. It is one Undo step. If there is no match, no editor-state identity is
+  allocated.
+
+Replace All
+  Graphium freezes all non-overlapping matches from the original source; inserted replacement
+  text does not recursively become a new match during the same command. The complete result
+  is calculated and checked against renderer safety before GTK mutation. Changes are applied
+  as one expected-delete/inverse-rollback delta transaction and therefore Undo as one unit.
+  An operation whose changed payload would exceed the bounded Undo budget is refused before
+  mutation rather than silently losing Undo.
+
+Escape closes the search bar and returns focus to the document.
+
+7. GO TO LINE
+-------------
+Go to Line… (Ctrl+G) accepts a 1-based line number bounded to the current document. It only
+moves the cursor/view; it does not modify text, history or Saved/Modified and does not create
+a bookmark/navigation-history subsystem.
+
+
+8. VIEW AND COMPACT STATUS
+--------------------------
+The View menu changes presentation only. These commands do not change document bytes,
+Undo history, Saved/Modified identity or encoding/EOL representation.
+
+Status Bar
+  Shows a compact event-driven status surface with 1-based line/column, accepted
+  encoding/EOL representation and Saved/Modified. It does not count words or scan the
+  complete document in the background. Visibility is persistent.
+
+Line Numbers
+  Shows logical line numbers in Gtk.TextView's native left border window. Only logical
+  lines currently intersecting the viewport are drawn. Wrapped visual continuations do
+  not receive extra line numbers. Graphium does not use GtkSourceView, a background line
+  index or a second synchronized scrolling widget. Visibility is persistent.
+
+Word Wrap
+  Uses GTK WORD_CHAR wrapping: prefer word boundaries and fall back to grapheme boundaries
+  when a word itself is too wide. The setting is persistent and does not insert line
+  breaks into the file.
+
+Font…
+  Chooses the persistent base font family and size for the editor view. Graphium applies
+  it with a view-local CSS provider; it is presentation state, not document state.
+
+Zoom In / Zoom Out / Reset Zoom
+  Zoom is transient magnification relative to the configured base font. Reset Zoom means
+  100%. Zoom is deliberately not stored as a document or persistent font change.
+
+Full Screen
+  F11 toggles transient full-screen window presentation. It is not session state.
+
+Toolbar
+  Graphium Plus adds a compact native toolbar as presentation only. See section 22 for the
+  exact button set, visibility behavior and Workspace toggle.
+
+9. DOCUMENT REPRESENTATION, SPELLING AND STATISTICS
+----------------------------------------
+Encoding
+  Selects the representation Graphium will use on the next Save: UTF-8, UTF-8 BOM, UTF-16 LE/BE
+  with BOM, or UTF-32 LE/BE with BOM. The choice does not rewrite the file immediately, does not
+  alter the text, and is not an Undo edit. A changed choice makes the document Modified until it is
+  saved or changed back to the saved representation. Graphium does not guess legacy encodings.
+
+Line Endings
+  Selects LF, CRLF or CR for the next Save. A mixed-EOL file remains reported as Mixed until you
+  explicitly choose a concrete line ending; that explicit choice is the normalization consent.
+  Normal Save never silently selects a different line-ending style.
+
+The Compact Status always projects the current selected representation, including an unsaved
+Encoding/Line Endings choice, together with Saved/Modified.
+
+Check Spelling… (F2)
+  Runs an explicit, on-demand spelling pass with the system Hunspell installation. The Dictionary selector
+  starts with System default and, when available, lists verified installed Hunspell dictionary IDs such as
+  it_IT, en_GB or en_US. Dictionary discovery happens only after you explicitly open Check Spelling. Choosing
+  another dictionary restarts the pass from the current document text; the choice lasts only for this spelling
+  dialog and does not change the document by itself. Unknown words are presented one at a time with bounded
+  suggestions and Replace, Ignore and Ignore All. Replace is a normal Graphium edit and therefore a normal
+  Undo step; the file on disk changes only after the ordinary Save command. Ignore All lasts only for the
+  current dictionary pass and is reset when you change dictionary. If Hunspell or a selected dictionary is
+  unavailable, Graphium reports that condition without changing the document. There is no live underline,
+  autocorrect, grammar checker, personal-dictionary manager or persistent spelling-language preference.
+
+Statistics…
+  Captures the current live buffer only when you request it and shows Lines, Words and Characters
+  for the document and for a non-empty selection. Characters are Unicode code points; words are
+  maximal non-whitespace runs; an empty document has zero lines. Graphium does not maintain live
+  counters, a statistics cache, worker or background scan.
+
+10. PAGE SETUP, PRINT PREVIEW AND PRINT
+----------------------------------------
+Page Setup…
+  Opens GTK's standard page setup surface. Graphium remembers the accepted paper/orientation/margins
+  in its own XDG configuration. Loading and saving this setting are lazy: normal quick-edit startup
+  does not initialize the print subsystem or read the Page Setup file.
+
+Print Preview
+  Ctrl+Shift+P opens GTK's native print preview for an exact snapshot of the current live text. A
+  Modified or Untitled document can be previewed without Save. The preview uses the persistent base
+  editor font, not transient Zoom, and does not print the screen line-number gutter or screen wrap.
+
+Print…
+  Ctrl+P opens GTK's standard print dialog. Graphium creates a fresh GTK print operation for each
+  invocation. Large jobs use GTK's native asynchronous completion and bounded incremental Pango
+  pagination, so Graphium does not perform the complete document layout inside one begin-print
+  callback. Only one Print/Page Setup/Preview operation may be active at a time. Text is measured at
+  the real printable width in logical-line-bounded chunks and paginated only between complete visual
+  Pango layout lines. Closing/cancelling printing does not alter the document,
+  Saved/Modified, Undo/Redo, Recent or its on-disk bytes.
+
+Graphium deliberately has no custom print-preview framework, syntax-print engine, Graphium print
+worker/thread, background print service or persistent printer-history platform.
+
+11. RENDERER SAFETY
+-------------------
+Large ordinary multiline documents keep normal editing and Undo. A different case is a
+pathological single logical line: validation demonstrated that very long unbroken lines can drive
+the Gtk.TextView rendering path into unacceptable responsiveness.
+
+Graphium therefore uses a conservative 20,000-Unicode-character interactive logical-line
+budget. An over-budget file is refused before Gtk.TextBuffer installation. Graphium never
+truncates the source, inserts line breaks/markers or silently rewrites it to make it fit.
+Normal insert/paste/newline-join edits cannot create an over-budget line. Replace All
+preflights the complete final result before using its programmatic transaction path.
+
+12. MULTIPLE FILES
+------------------
+Graphium remains single-document but not globally single-process. To keep two files open,
+open two Graphium windows. Each is independently owned by one process and one document.
+
+13. FILE SAFETY
+---------------
+The current product applies these invariants:
+
+* one physical writer authority;
+* no direct-write fallback;
+* staged same-directory writes and late revalidation;
+* Save As binds only after commit;
+* unexpected external replacement blocks ordinary Save;
+* symlink logical identity is preserved by the guarded writer;
+* hard-linked targets fail closed in the current policy;
+* failed Save keeps the document Modified;
+* late Save of an older state cannot clean a newer state;
+* search navigation cannot change Saved/Modified;
+* replacement is all-or-nothing with respect to its Graphium transaction authority;
+* Save a Copy / Version Copy reuse the sole guarded writer but never rebind or move savepoint;
+* Properties -> Check Now observes strongly but never refreshes the accepted baseline.
+
+Reload from Disk is a deliberate disk re-acceptance boundary. It never writes the file and never
+touches Recent. If the active document is Modified, Reload uses its own dedicated decision:
+Cancel, or Discard Changes and Reload. Reload never performs Save or Save As automatically.
+It fully loads and validates the current logical path before replacing the buffer; any failure leaves
+the active document unchanged. Ordinary Save remains separately guarded and fails closed when the
+accepted on-disk baseline has become stale.
+
+14. RELOAD FROM DISK
+--------------------
+File -> Reload from Disk (F5) explicitly re-accepts the file currently named by the active logical
+path. Reload is available only for a named document. For a Saved document, Graphium loads and
+validates the complete file before replacing the editor state. For a Modified document, the Reload
+dialog offers only Cancel and Discard Changes and Reload; Cancel preserves the modified buffer
+exactly, while Discard Changes and Reload deliberately abandons the in-memory edits and accepts the
+fresh disk state. Reload never invokes the physical writer and never changes Recent. A successful
+Reload becomes Saved and resets Undo/Redo to the newly loaded document.
+
+15. LIVE EXTERNAL-FILE MONITORING
+---------------------------------
+For a named local document, Graphium uses Gio file monitoring only as an interrupt source. A raw
+filesystem event is never accepted as document truth. After coalescing duplicate events, Graphium
+performs the same strong observation used by Check Now: logical/canonical identity, object topology,
+metadata and a full SHA-256 content fingerprint are compared with the accepted document baseline.
+The strong read runs outside the GTK main thread, with at most one observation in flight and no
+periodic polling or idle background hashing.
+
+Material external changes appear in one nonmodal information bar. Content changes and physical
+replacement/retargeting offer Reload from Disk; missing or unavailable/unstable files are reported
+without changing the buffer. Metadata-only change is informational. Graphium never auto-reloads and
+the monitor never silently replaces the accepted baseline. Open, Save, Save As and Reload suspend
+and rebind monitoring around their authoritative lifecycle transition so Graphium's own writes do not
+become false external-change warnings. For a directly symlink-opened document, monitoring covers both
+the accepted resolved target and replacement/retarget/removal of the logical symlink path.
+
+16. PERFORMANCE DISCIPLINE
+--------------------------
+Graphium targets lightweight quick-edit behavior. Search does no startup scan, idle scan, background indexing or eager match highlighting.
+View status is event-driven: it reads cursor/session metadata and does not scan the
+document. Line-number drawing is viewport-bounded. Persistent View settings are loaded once
+from a small XDG file and written only on explicit user changes. Recent state is lazy and
+bounded to ten paths; Statistics is O(n) only after explicit activation and has no live worker.
+Printing is likewise dormant at startup: its module/controller/Page Setup I/O are deferred until
+an explicit Page Setup/Preview/Print action.
+
+Performance qualification keeps common FIRST_VISIBLE and Graphium's exact internal FIRST_EDITABLE
+handshake as separate evidence. Direct mature-source and T480 qualification showed that the compared
+editors do not expose one homogeneous external file-loaded/editable lifecycle, so Graphium does not
+turn AT-SPI focus, text projection or accessibility mutation into a cross-product readiness metric.
+Cross-product timing uses FIRST_VISIBLE only; exact Graphium FIRST_EDITABLE remains product-owned.
+
+17. HELP AND KEYBOARD SHORTCUTS
+-------------------------------
+Help contains exactly User Guide, Keyboard Shortcuts and About. About includes author, copyright,
+GNU GPL v3.0-or-later, the product repository link and compact support information for the running
+Python, GTK and display backend; Graphium Ultra has no separate diagnostics menu. Choose Help > Keyboard
+Shortcuts for the accelerator list of the running edition. Graphium Core keeps its own shortcut
+authority; Plus adds F9 for Focus Mode and Ctrl+K for Command Palette, and Ultra inherits those
+bindings without adding another global accelerator. Workspace, Outline, Companion Panel and toolbar
+visibility remain explicit View actions without dedicated accelerators. Accelerators are audited
+against the active Linux Mint/Cinnamon global bindings before release. Ctrl+Alt+L is reserved in the
+target environment and is not used by Graphium.
+
+18. WHAT THE CORE EDITOR DELIBERATELY DOES NOT ADD
+--------------------------------------------------
+The inherited Graphium Core editor deliberately has no Plus writing chrome. Graphium Plus adds
+bounded optional presentation surfaces around the same single document: compact Toolbar, Workspace,
+Document Outliner, bottom Markdown Toolbar and the right Companion Panel. Each surface can be hidden
+independently; hiding the higher-edition chrome returns the window to the simpler Graphium editing
+surface without creating a second editor mode or document authority. It still adds no GtkSourceView,
+syntax engine, tabs, session restoration, plugin platform, automatic
+backup, revision database/timeline, background statistics, global recent manager, custom print
+preview, print worker/service, persistent printer history, automatic reload, periodic filesystem
+polling, conflict/merge platform or custom theme platform. Appearance remains deliberately limited
+to System, Light and Dark.
+
+
+SEARCH SCALE SAFETY
+-------------------
+Find Next and Find Previous do not build a list of every occurrence. Case-insensitive
+Unicode search works one logical line at a time, so it does not keep a second folded copy
+of the entire document. Replace All is deliberately bounded: one activation can freeze at
+most 50,000 source matches and must also fit the Undo payload budget. If either bound would
+be exceeded, Graphium refuses the operation before changing the document. This does not
+limit ordinary Find Next/Previous.
+
+19. EXPLICIT TEXT TRANSFORMATIONS
+---------------------------------
+Edit -> Transform Text contains Uppercase, Lowercase, Duplicate Line / Selection, Move Lines Up,
+Move Lines Down and Trim Trailing Spaces. Uppercase/Lowercase require a selection. Duplicate and
+Move use the current line when there is no selection. Trim Trailing Spaces affects selected lines,
+or the whole document when there is no selection, and removes only ASCII spaces/tabs at line ends.
+These commands are never applied automatically on Open or Save. Uppercase uses Ctrl+U, Lowercase uses
+Ctrl+Shift+L, and Move Lines Up/Down use Alt+Up and Alt+Down; Duplicate Line / Selection and Trim Trailing
+Spaces remain menu-driven.
+
+20. TAB CONTROLS, APPEARANCE AND DESKTOP POLISH
+----------------------------------------------------
+Edit -> Tab Width offers 2, 3, 4, 8 and Other…; Other… accepts any width from 1 to 32. The default
+is 8. Changing Tab Width affects how literal TAB characters are displayed; it never rewrites
+existing text. Edit -> Insert Spaces Instead of Tabs is a direct checked command. When enabled, a
+normal Tab key inserts spaces to the next configured tab stop. Shift+Tab, Ctrl+Tab and Alt+Tab are
+not repurposed. Both settings persist across restarts.
+
+View -> Appearance contains System, Light and Dark. Appearance is changed and persisted only from
+this View submenu.
+
+Graphium remembers the latest normal window size after an accepted close. It does not remember
+window position, monitor, maximized state or fullscreen state.
+
+You can drag a local file onto Graphium to open it through the same guarded Open lifecycle used by
+File -> Open. If the active document is Modified, the normal Save/Discard/Cancel prompt still owns
+the decision. Dropped plain text remains normal text editing. Remote URIs and directories are not
+opened as documents.
+
+21. CRASH RECOVERY
+------------------
+Graphium keeps one private crash-recovery artifact for a Modified document. Recovery state is stored
+under the user's XDG state area; it never autosaves or overwrites the document being edited. The
+recovery write is delayed and coalesced, and no recovery thread or directory is created merely by
+starting Graphium with nothing to recover.
+
+After an interrupted Graphium process, the next launch may show **Recovered unsaved content**. One
+launch offers at most one recovery artifact. You can:
+
+  Recover Unsaved Content
+    Opens the recovered text as Modified. If the original named file still matches the exact accepted
+    baseline from before the interruption, Graphium safely re-establishes that fresh disk baseline and
+    keeps the recovered text above it as Modified. Undo/Redo starts empty.
+
+  Discard Recovery
+    Explicitly deletes that recovery artifact.
+
+  Start Without Recovering
+    Continues startup and leaves the recovery artifact untouched for a later launch.
+
+When Graphium was launched for a specific file, only recovery associated with that logical path may be
+offered. If the original file is missing, replaced, changed, or a symlink now points somewhere else,
+Graphium does not silently bind recovered text to it. The recovered content opens as an unbound
+Modified document; the original path is shown only as provenance and any later write requires the
+normal Save As choice. Untitled recovery likewise remains unbound.
+
+Recovery keeps the selected Encoding/BOM/Line Endings as unsaved representation state. It does not
+restore pre-crash Undo/Redo history, does not keep historical recovery versions, does not add a session
+browser, and does not create a recovery preference or menu.
+
+22. COMPACT TOOLBAR — GRAPHIUM PLUS
+------------------------------------
+The compact toolbar is a native GTK projection of existing Graphium commands. From left to right it
+contains New, Open, Save, Undo, Redo, Cut, Copy, Paste, Reload, Find and Replace, followed by the
+Workspace visibility toggle. The buttons call the same canonical window actions as the menus and
+keyboard shortcuts; the toolbar does not implement a second command, document or Save authority.
+
+Choose View -> Toolbar to show or hide the entire compact toolbar. The explicit choice is remembered
+for later windows in the Plus state directory. Hiding the toolbar never disables the corresponding menu
+commands or accelerators. View -> Workspace and the Workspace button at the end of the toolbar remain
+two projections of the same independent Workspace visibility state.
+
+Button sensitivity follows the existing Graphium action state. For example, Undo/Redo and clipboard
+actions remain governed by the same editor state used by the menus. No toolbar polling, worker,
+watcher or separate state service is created.
+
+23. WORKSPACE — GRAPHIUM PLUS
+-----------------------------
+Workspace is a bounded local folder tree shown to the left of the existing Graphium editor. It has
+one local root and never creates a second editor, document session or Save authority. Startup does
+not automatically reopen or scan a prior Workspace. Filesystem loading begins only after an explicit
+Workspace action.
+
+Open Folder
+  Binds one real local directory as the Workspace root. Symbolic-link roots are rejected.
+
+Recent
+  Lists up to eight recent Workspace roots. This is separate from Recent Files and does not restore
+  a document session. Recent Workspace state is read only when the user requests it.
+
+Tree navigation and opening
+  Directories load lazily when expanded. Hidden names are omitted. Folders are listed before files
+  and siblings use numeric-aware natural ordering, so chapter2.txt sorts before chapter10.txt.
+  Symlink rows are not expanded or opened. Native tree search searches only rows already loaded.
+
+  A single click selects a row; it does not open the file. Double-click or Enter on a regular .txt
+  or .md file opens that file inside Graphium Ultra through the same canonical Open lifecycle used by
+  File -> Open, including Save/Discard/Cancel protection when the current document is Modified.
+  Other regular file types are delegated to the desktop default application only on explicit
+  activation.
+
+  In Light appearance the selected Workspace row remains visibly highlighted both while the tree has
+  keyboard focus and while focus is in the editor. This visual state does not change the underlying
+  selection authority.
+
+Right-click menu
+  Right-clicking a Workspace row selects that row and opens a context menu. Open with Graphium Ultra
+  is enabled only for regular .txt/.md files and uses the same canonical Graphium Open lifecycle.
+  The menu also exposes Reveal in File Manager, New Text File, New Folder, Rename, Duplicate and Move
+  to Trash. These entries reuse the same Workspace callbacks/controllers as the icon buttons; there
+  is no second filesystem implementation behind the menu.
+
+Locate Active Document
+  Reveals and selects the active document when it belongs to the current Workspace, loading only the
+  necessary ancestor directories. It does not change the Workspace root, does not auto-follow later
+  document changes and preserves the editor's writing focus. If Workspace is hidden, an explicit
+  Locate operation shows it first.
+
+Refresh
+  Refresh is explicit. It rescans the bound root and lazily reconstructs only the directory branches
+  needed to restore surviving expansion state and the surviving selected relative path already held
+  in memory. It does not create persistent session state.
+
+New Text
+  Creates a new .txt or .md file without overwrite. If the current document is Modified, Graphium
+  resolves Save/Discard/Cancel before filesystem creation so Cancel cannot leave an unwanted empty
+  file. The new file then opens through the normal Graphium lifecycle.
+
+New Folder
+  Creates one folder inside the selected directory, or inside the selected file's parent. It does not
+  replace the active document and therefore does not invoke the document unsaved guard.
+
+Rename
+  Renames an inactive regular file or inactive directory within its current parent. The active
+  document and any directory containing it are protected from Workspace Rename. Strong pre-commit
+  identity checks fail closed if the selected filesystem object changes before commit.
+
+Duplicate
+  Duplicates one regular file as a sibling using the bytes saved on disk. Unsaved editor changes are
+  not copied, the source remains the active document, and the duplicate is not opened automatically.
+  The operation uses verified staging and a no-overwrite commit. Folder duplication is outside the
+  Workspace scope.
+
+Managed Scratchpad sidecars
+  Files ending in `.scratchpad.md` are reserved companions, not ordinary Workspace documents.
+  They remain visible in the Workspace tree so filesystem data is not hidden, but they cannot be
+  opened as documents or created directly from Workspace. Rename/Move/Duplicate/Trash operate on
+  the owning document, which carries its exact managed companion through the R1-D transaction.
+
+Move to Trash
+  Moves an inactive regular file or inactive directory to the system Trash after explicit
+  confirmation. There is no permanent-delete fallback. The active document, a directory containing
+  it, the Workspace root and symbolic links are protected.
+
+Reveal in File Manager
+  With a Workspace item selected, Graphium Ultra requests
+  org.freedesktop.FileManager1.ShowItems for that exact item's URI. With no selected item it requests
+  ShowFolders for the Workspace root. If FileManager1 is unavailable, Graphium Ultra falls back to
+  opening the relevant directory and does not claim that the exact item was highlighted. Desktop
+  file-manager highlight appearance is controlled by that file manager, not by Graphium Ultra.
+
+Show/Hide Workspace
+  View -> Workspace, the toolbar Workspace toggle and the small X in the Workspace header all route
+  through the same checked visibility action. The X is a direct close control, not a second hide
+  mechanism. The explicit visibility choice is remembered in the Plus state file workspace-panel.json;
+  the first-run and malformed-state default remains visible. This preference does not reopen the
+  previous Workspace root and does not persist pane width. Hide/show preserves the live root, loaded
+  tree, expansion and selection in memory, and Focus Mode temporarily overrides the panel without
+  changing or saving the preferred Workspace visibility.
+
+Partial-view diagnostics
+  If a directory can be only partially read, Workspace keeps the readable rows and reports the first
+  diagnostic in its status line; the full diagnostic set is available from the status tooltip. A
+  partial read does not silently become a complete-view claim.
+
+Workspace deliberately does not provide tabs, project/session ownership, global indexed search, Git
+UI, terminal, remote/VFS browsing, automatic filesystem watching, automatic follow-current-document,
+permanent deletion, multi-selection batch operations, recursive startup snapshots, an indexer, a
+database or a background Workspace worker.
+
+24. SCHOLARLY NOTES — GRAPHIUM PLUS
+------------------------------------
+Graphium Plus 0.0.2 begins its academic-writing layer with literal Markdown/Pandoc scholarly
+notes. The document text remains the only authority: Graphium does not store footnotes in a
+database, sidecar or hidden note model, and these commands do not create a second Save or Undo
+authority.
+
+Supported source forms
+  A footnote reference is written as `[^id]`. A definition is written as `[^id]: text`; definition
+  bodies may continue on following tab-indented or four-space-indented lines, including a later
+  indented paragraph separated by blank lines. Pandoc inline notes use `^[note text]`. Fenced code,
+  inline code and escaped reference markers are not interpreted as scholarly notes by this layer.
+
+Commands -> Notes & Citations -> Insert Footnote
+  Inserts the next free numeric reference at the current caret, or immediately after the current
+  selection, and appends its definition at the end of the document. Reference insertion and
+  definition creation are one prevalidated Graphium programmatic edit and therefore one Undo step.
+  The caret moves to the new definition body. Existing prose is never replaced merely because it
+  was selected.
+
+Commands -> Notes & Citations -> Insert Inline Note
+  With a single-line selection, wraps exactly that text as `^[selected text]` and keeps the inner
+  text selected. With no selection it inserts `^[]` and places the caret between the brackets. A
+  multiline selection is refused rather than silently flattened or rewritten. The edit uses the
+  same bounded Undo and stale-state authority as the rest of Graphium.
+
+Commands -> Notes & Citations -> Go to Footnote / Reference
+  With the caret on a resolved `[^id]` reference, moves to the first matching definition body. With
+  the caret inside a definition block, moves to its first matching reference. Navigation changes
+  only the view/caret: document text, Undo history and Saved/Modified remain unchanged. Unresolved
+  references and definitions without a reference are not guessed.
+
+Commands -> Review -> Check Footnotes
+  Performs an explicit current-buffer check and reports duplicate definitions and unresolved
+  references together with counts of definitions, references and inline notes. The check is
+  read-only, local and on-demand; there is no background indexer or continuous diagnostics worker.
+
+Scope and academic-writing roadmap
+  Scholarly notes are one part of the Graphium Plus academic-writing line, not an Ultra-only
+  feature. Citations, a local human-readable reference authority, BibTeX/BibLaTeX interchange and
+  explicit Pandoc export are separate later Plus increments so they can reuse the same document and
+  transaction authorities without turning note support into a generic research framework.
+
+RIGHT COMPANION PANEL — GRAPHIUM PLUS
+--------------------------------------
+The right Companion Panel shows Clips and Scratchpad simultaneously. They are not alternate pages
+and there is no Clips/Scratchpad selector: a vertical divider lets the user allocate space while both
+clients remain present in the same panel. View -> Companion Focus -> Clips / Scratchpad only moves
+keyboard focus to the requested client; it never hides the other client.
+
+View -> Companion Panel and the small X in the panel header use the same checked visibility authority.
+The X closes the whole right panel directly without creating a second visibility state. Panel
+visibility and width are presentation state only. Focus Mode may hide the panel temporarily but does
+not overwrite the user's stored preference.
+
+Clips are application-level reusable text records. Scratchpad records are document-local and use the
+managed `<document>.scratchpad.md` companion described in the Workspace and Save As sections. Neither
+client becomes a second document, Save authority or hidden database.
+
+25. DOCUMENT OUTLINER — GRAPHIUM PLUS
+--------------------------------------
+The Outliner is the narrow structure panel immediately to the left of the editor. It is a disposable
+projection of Markdown headings from the current buffer; the editor text remains the only document
+authority. ATX H1-H6 and Setext H1/H2 headings use the same single structural Markdown authority
+that later Plus/Ultra presentation features must reuse. Fenced-code pseudo-headings are ignored.
+
+Navigation
+  Headings are shown in source order with indentation reflecting heading level. A single click on a
+  heading moves the editor caret to that heading text and returns writing focus to the editor. This is
+  view-only navigation: it does not change document text, Saved/Modified state or Undo/Redo history.
+
+Current section
+  Moving the editor caret selects the nearest heading at or before the caret without reparsing the
+  document. The lookup is a binary search over the current immutable outline projection. Text before
+  the first heading leaves the Outliner selection empty.
+
+Live refresh
+  Content edits mark the projection stale and schedule one bounded, coalesced refresh after the edit
+  burst. There is no periodic scan, worker, watcher or background indexer. Cursor movement alone never
+  triggers a structural reparse. If a heading click reaches a projection whose source identity no
+  longer matches the buffer, navigation is refused and a refresh is scheduled instead of using stale
+  offsets.
+
+Show/Hide Outline
+  View -> Outline and the small X in the Outline header use the same visibility authority. The panel
+  is optional and remembers the explicit choice. When Outline is hidden,
+  content edits only mark its projection stale: they do not schedule or execute an Outliner rebuild.
+  Showing it again performs one coalesced refresh only if the projection became stale and restores the
+  live pane width. Focus Mode temporarily hides the panel without changing the stored preference.
+
+Architecture
+  The Outliner has no independent tree/document store, file ownership, Save authority, Undo stack or
+  persistent database. The GTK panel renders `graphium_plus.outliner.OutlineProjection`; Markdown
+  parsing remains GTK-free in `graphium_plus.markdown`.
+
+26. MARKDOWN WRITING COMMANDS — GRAPHIUM PLUS
+----------------------------------------------
+Graphium Plus exposes one product-owned Markdown command catalog under Commands -> Markdown.
+This is the single command/action authority that the later compact bottom Markdown toolbar will
+reuse; the menu and toolbar must never grow separate formatting implementations.
+
+Headings
+  Heading 1 through Heading 6 format the current single source line as canonical ATX Markdown.
+  An existing ATX or Setext heading is converted to the requested ATX level while preserving its
+  literal heading text. A multiline selection is refused rather than applying an ambiguous
+  multi-heading rewrite.
+
+Inline
+  Bold, Italic, Strikethrough and Inline Code wrap an explicit single-line selection. If the exact
+  same marker already surrounds the selection, the command removes that marker instead of nesting
+  another copy. With no selection the command inserts an empty marker pair and leaves the caret
+  between the markers. Inline Code chooses a longer backtick run when the selected text already
+  contains backticks. Graphium Plus intentionally does not guess a word under the caret: selection
+  and caret state are explicit command inputs.
+
+Blocks
+  Blockquote, Bulleted List, Numbered List and Task List operate on the current line or selected
+  source lines. Existing quote/list prefixes are normalized to the requested form; ordered lists
+  are numbered sequentially inside the selected scope. Code Block inserts a fenced block, choosing
+  a fence longer than any backtick run in the selected body. Thematic Break inserts literal `---`
+  as a block-level source construct.
+
+Insert
+  Link and Image insert literal Markdown templates and never fetch local or remote media. Table
+  inserts one bounded two-column Markdown table skeleton as plain text; Graphium Plus does not
+  create a table object or alternate document model.
+
+Academic workflow
+  Scholarly-note actions keep their already-qualified parser and transaction authority but are
+  presented according to the academic-writing workflow: note insertion/navigation lives under
+  Commands -> Notes & Citations, while Check Footnotes lives under Commands -> Review. Formatting
+  remains under Commands -> Markdown. Menu composition does not duplicate command semantics.
+
+Undo and safety
+  Text-changing Markdown commands produce immutable GTK-free plans and are committed only through
+  Graphium's existing prevalidated programmatic edit authority. Each logical command is one bounded
+  Undo group, stale state is rejected before mutation, and final text must satisfy the existing
+  renderer-safety policy. The command layer adds no Save authority, database, worker, parser copy,
+  plugin registry or background document scan.
+
+27. BOTTOM MARKDOWN TOOLBAR — GRAPHIUM PLUS
+
+The bottom edge of the central editor contains a compact Markdown toolbar for
+frequent writing commands. It is an editor-local surface: the Outliner and
+Workspace do not own it, and it never stores document state.
+
+The toolbar is a compact frequent-writing projection of the same window actions used by
+the Commands workflow; there is no second Markdown or scholarly-note implementation. Formatting
+buttons correspond to Commands -> Markdown, while Insert Footnote corresponds to Commands ->
+Notes & Citations. The compact set includes H1/H2, Bold, Italic, Strikethrough, Inline Code,
+Blockquote, Bulleted/Numbered/Task List, Code Block, Link, Image and Insert Footnote. Less frequent
+operations remain in their workflow menus.
+
+The glyphs are small theme-neutral Markdown symbols rather than theme-specific icon names, so the
+controls remain legible across Linux icon themes. Tooltips and GTK overflow-menu labels provide the
+full command names. View -> Markdown Toolbar independently shows or hides this bottom toolbar and
+remembers the explicit choice. The visibility state is presentation-only and introduces no parser,
+worker, database or background task.
+
+Presentation modularity
+  Workspace, compact Toolbar, Outline, Markdown Toolbar and Companion Panel are independent optional
+  surfaces. In Ultra, the Markdown Viewer is also an Ultra-only optional window. Hiding Outline,
+  Markdown Toolbar and Companion Panel reduces the visible writing chrome toward Plus; hiding Workspace
+  and the compact Toolbar as well leaves the Core Graphium editing surface. Higher-edition commands remain
+  available from their menus: this is presentation modularity, not a second runtime edition switch.
+
+28. REFERENCES AND CITATIONS — GRAPHIUM PLUS
+----------------------------------------------
+Graphium Ultra inherits the Plus Reference Library but stores its own copy at
+`$XDG_DATA_HOME/graphium-ultra/references.md`. It is ordinary UTF-8 Markdown, not a database.
+The library is read only on demand; there is no background indexer, watcher, network lookup or
+cloud service. Physical writes are delegated to the same Core writer authority used elsewhere by
+Graphium; Plus does not create a second writer.
+
+Commands workflow
+  Commands is organized around academic writing without creating a separate Academic top-level
+  menu. Commands -> Markdown contains formatting and source-structure operations. Commands ->
+  Notes & Citations contains note insertion/navigation plus Quick Cite and Insert Citation.
+  Commands -> References contains Reference Library, Find Reference and explicit BibTeX/BibLaTeX
+  import/export. Commands -> Review contains Check Footnotes and Check Citations. Only implemented
+  actions are shown. Final Pandoc output is owned by File rather than Commands because it is an
+  explicit document-output operation, not a writing transformation.
+
+Reference Library
+  Commands -> References -> Reference Library opens the one local library. Search is bounded and
+  on-demand. Add/Edit/Delete changes remain local to the dialog until Save; Cancel discards them.
+  Saving is conflict-aware: if the library changed externally after it was loaded, Graphium Ultra
+  refuses to overwrite it. Existing citation keys are immutable in this increment, so editing a
+  record cannot silently break citations already present in documents. Delete requires explicit
+  confirmation. The editor exposes the core bibliographic fields needed for manual entry while
+  preserving fields not shown by the compact form.
+
+Find Reference
+  Commands -> References -> Find Reference searches key, author, title, year, DOI and other stored
+  fields without building an index. Selecting a result shows its local bibliographic details and
+  does not change the document.
+
+Quick Cite
+  Commands -> Notes & Citations -> Quick Cite chooses one library record and inserts literal Pandoc
+  source `[@key]` at a collapsed caret. The edit is one existing Graphium programmatic Undo group.
+  A selection is refused rather than replaced implicitly.
+
+Insert Citation
+  Commands -> Notes & Citations -> Insert Citation adds an optional locator and inserts literal
+  Pandoc source such as `[@key, p. 42]`. Citation syntax remains plain document text; Graphium Plus
+  does not create citation widgets or a hidden citation model.
+
+Check Citations
+  Commands -> Review -> Check Citations compares citation keys in the current unsaved buffer with
+  the current local Reference Library and reports missing keys deterministically. Citations inside
+  fenced or inline code are ignored by reusing the same Plus Markdown structural authority. The
+  check is explicit and read-only; it does not guess whether prose "should" have a citation.
+
+Scope
+  The reference/citation layer remains local and explicit. It adds no RIS, CSL editor, citation
+  database, Zotero/cloud synchronization, background bibliography service, automatic citation-gap
+  inference or Pandoc build pipeline. Those capabilities require separate source-first decisions.
+
+29. BIBTEX / BIBLATEX INTEROPERABILITY — GRAPHIUM PLUS
+-------------------------------------------------------
+BibTeX and BibLaTeX are interchange formats only. The canonical bibliography remains the human-
+readable `references.md` Reference Library; importing a `.bib` file never turns that file into a
+second library authority.
+
+Import
+  Commands -> References -> Import BibTeX/BibLaTeX opens one local UTF-8 `.bib` file. The read is
+  bounded, refuses symlinks/non-regular files and fails closed if the file changes while being read.
+  Parsing happens before any canonical mutation. Blocking diagnostics stop the import. A review
+  dialog shows new, conflicting and already-identical keys. Key conflicts require an explicit whole-
+  record decision: keep the existing record or replace it with the imported record. Graphium Plus
+  performs no implicit or field-by-field merge. Saving still goes through the one Reference Library
+  conflict token and the existing Core writer, so an external library change aborts the operation.
+
+Export
+  Commands -> References -> Export BibTeX and Export BibLaTeX derive a `.bib` representation from
+  the current canonical Reference Library. Export does not change the library or current document.
+  The destination is chosen explicitly, overwrite confirmation is user-visible, and the physical
+  write reuses the existing Core guarded writer rather than introducing an export writer.
+
+Diagnostics and scope
+  Duplicate keys, unresolved macros, malformed records and unresolved crossref/xref/xdata inheritance
+  are explicit diagnostics. Unknown scalar fields are preserved where possible. The interoperability
+  layer does not implement CSL/citeproc, RIS, network metadata lookup, bibliography databases,
+  background indexing or Pandoc output.
+
+30. EXPLICIT PANDOC OUTPUT — GRAPHIUM PLUS
+-------------------------------------------
+Graphium Ultra inherits the Plus Pandoc-output workflow and can generate a final derived document with an externally installed Pandoc. The
+feature is explicit and on-demand: Graphium does not start Pandoc at launch, keep a renderer daemon
+alive, embed a LaTeX/PDF engine or save export-history state.
+
+File workflow
+  File -> Export with Pandoc contains HTML, Microsoft Word, OpenDocument Text and LaTeX source.
+  Graphium checks the available Pandoc executable only after an export command is chosen and requires
+  Pandoc 2.11 or newer. PDF is deliberately not part of this first contract because PDF output adds a
+  separate typesetting toolchain that requires its own source-first decision.
+
+Frozen inputs
+  The export plan uses the current authoritative editor buffer, including unsaved text. Citations are
+  resolved against the current Reference Library and only actually cited records are projected to a
+  private temporary BibLaTeX input, in first-citation order. The canonical `references.md` file is
+  never replaced by that temporary projection. Remote images/media are refused before Pandoc is
+  started; ordinary hyperlinks remain allowed.
+
+Process and cancellation
+  Pandoc runs in one tracked background worker so the GTK main loop remains responsive. Invocation is
+  shell-free with typed arguments, bounded stdout/stderr capture, timeout handling and exact process-
+  group cancellation. Temporary Markdown, bibliography and generated output live in a private
+  temporary workspace. Closing Graphium Ultra while Pandoc is active cancels and joins the exact worker
+  and child before normal application close is accepted.
+
+Final publication
+  Pandoc first returns a derived artifact in memory; it never writes the user-selected destination
+  directly. Before final publication Graphium rechecks three independent authorities: the editor
+  state/text digest, the Reference Library token and the original destination observation. If any of
+  them changed, the artifact is discarded and the destination is not written. A fresh artifact is
+  committed exactly once through the existing Core guarded writer. Export does not change the current
+  document path, text, dirty state, Undo/Redo history or Reference Library.
+
+
+31. ACADEMIC REVIEW — GRAPHIUM PLUS
+------------------------------------
+Commands -> Review -> Academic Review opens one read-only diagnostic projection over the current
+unsaved document and the current Reference Library. It does not run a second parser: the report
+aggregates the existing Markdown, scholarly-note, citation and reference-library authorities plus the
+small deterministic Writing Hygiene layer.
+
+The list shows severity, category, location and issue. Selecting an issue and choosing Go to first
+revalidates both the document digest and the Reference Library token. If either changed after the
+report was built, Graphium refuses stale navigation rather than projecting an old offset or line.
+
+Document targets select the exact source range in the current editor without changing text, dirty
+state or Undo/Redo history. Reference Library targets open a read-only source projection at the exact
+diagnostic line; they do not replace the current document or make the reference file a second editor
+document.
+
+Writing Hygiene remains deliberately narrow and language-neutral. It reports multiple internal spaces
+in prose and trailing whitespace outside fenced/inline code. Exactly two trailing spaces are preserved
+as valid Markdown hard-break syntax. Academic Review performs no automatic fixes, grammar scoring,
+style scoring, citation-gap inference or AI analysis.
+
+
+32. FIND IN WORKSPACE — GRAPHIUM PLUS
+----------------------------------------
+Search -> Find in Workspace performs an explicit on-demand literal search across visible `.md` and
+`.txt` files beneath the currently bound Workspace. It does not create a search index, database,
+watcher or background search service. Hidden files/directories, symbolic links and managed
+`.scratchpad.md` companions are excluded from search. Managed companions remain visible in the
+Workspace tree; exclusion here prevents them from becoming normal searchable/openable documents.
+
+Search semantics
+  The query is single-line and reuses Graphium Core's existing Unicode literal-search semantics,
+  including Unicode casefold when Match case is disabled. Results contain the relative file path,
+  one-based line number, bounded line context and the exact source range of the match. Searches are
+  bounded by explicit file/result budgets and report skipped or over-budget inputs rather than
+  silently indexing them.
+
+Unsaved active document
+  If the current editor document is a regular `.md` or `.txt` file inside the Workspace, its
+  authoritative unsaved Gtk.TextBuffer snapshot overrides the older disk copy during the search.
+  Such results are bound to the exact editor state id and text digest and are refused if the buffer
+  changes before navigation.
+
+Disk results and navigation
+  Results from other files carry strong filesystem identity and content-fingerprint evidence. Before
+  opening a result Graphium revalidates that evidence and the exact literal match. The file is then
+  opened only through the existing canonical Open lifecycle; after Open the loaded source digest and
+  match are checked again before Graphium selects the exact range. A changed file is therefore not
+  navigated using an old offset.
+
+Scope
+  Find in Workspace is intentionally synchronous and on-demand in this increment. It adds no Tantivy,
+  SQLite/FTS index, recursive watcher, worker thread or persistent search history. If realistic corpus
+  evidence later proves this bounded operation blocks the GTK interface materially, incremental or
+  worker execution requires a separate source-first decision rather than being pre-implemented now.
+
+Command Palette
+---------------
+Commands -> Command Palette… (Ctrl+K) opens a transient command HUD over the current window.
+It projects the enabled action-bearing commands that are already present in Graphium's live menu
+surface; it does not maintain a separate command or shortcut registry. Type to filter by command
+label or menu path, use Up/Down to change the selected result, Enter to activate it, and Escape to
+cancel. The first matching result is selected automatically. Existing shortcut hints are shown when
+they are registered for the projected action.
+
+The palette is command-only. It does not search Workspace filenames or document contents. Open
+Recent is not copied into the palette because that submenu is dynamic. Cancelling restores the
+widget that had focus before the palette opened. The palette remains available with Ctrl+K while
+Focus Mode hides the menubar; opening or cancelling it does not change Focus Mode, Companion Panel
+state, document text, dirty state, or Undo history.
+
+
+
+33. NATIVE MARKDOWN VIEWER — GRAPHIUM ULTRA
+--------------------------------------------
+View -> Markdown Viewer opens the current unsaved editor text in a separate read-only native GTK
+window. The editor Gtk.TextBuffer remains the only mutable document authority. The Viewer does not
+read the document from disk, save anything, create Undo history, change dirty state, move the editor
+caret or replace the active document.
+
+Rendering authority
+  The Viewer uses the same shared MarkdownDocumentMap already used by Graphium Plus structure and
+  academic projections. It does not run a second Markdown parser or regex scanner. Headings,
+  paragraphs, emphasis, strong text, inline/fenced code, block quotes, ordered/unordered list items
+  and thematic breaks are projected into a disposable Gtk.TextBuffer. Rapid editor changes are
+  coalesced, and a projection whose source identity became stale is refused and rebuilt.
+
+U1.3 local images
+  Local PNG/JPEG/WebP images are rendered by U1.3 directly in the disposable native Gtk.TextBuffer.
+  Relative targets resolve from the active document directory; an unsaved document cannot resolve a
+  relative target. Absolute local filesystem paths are allowed. Remote/URI targets, SVG, animated or
+  unsupported formats, missing files, oversized files and decode failures remain inert text
+  placeholders; opening Markdown never performs an implicit network fetch. Image files are bounded
+  before decode and are displayed without upscaling inside a bounded 640 x 900 pixel box.
+
+U1.4 native tables
+  Valid bounded Markdown pipe tables are rendered as native read-only GTK grids. A header row and
+  `---` delimiter row are required; optional delimiter colons project left/center/right alignment.
+  Header cells are bold and ordinary emphasis, strong, inline-code and inert link labels reuse the
+  same shared Markdown spans as the rest of the Viewer. Malformed, ambiguous or over-budget table
+  candidates remain ordinary text without truncation. A candidate containing an image also stays
+  ordinary text so the already-qualified U1.3 image path remains authoritative.
+
+U1.5 active links
+  Link labels are active only when their target passes the Viewer policy. Internal heading links use
+  `#identifier`: automatic heading identifiers follow the Viewer/Pandoc-compatible heading rule, and a
+  valid trailing `{#id}` may supply an explicit identifier. Ambiguous duplicate explicit identifiers
+  remain inert. External activation is limited to absolute HTTP/HTTPS links and occurs only after an
+  explicit click through the system GIO handler. File, data, javascript, mail, relative and malformed
+  targets stay inert; the Viewer never fetches remote link content itself.
+
+U1.6 reading position
+  Live Viewer refresh preserves the reading location as transient presentation state. When possible,
+  the nearest unique heading is the semantic anchor and the relative position inside that section is
+  preserved; if that heading disappears or is ambiguous, the Viewer falls back to the relative
+  position in the whole preview. Focus Mode snapshots the position before hiding the Viewer and a
+  stale refresh restores it after the Viewer is shown again. Explicit U1.5 link navigation always wins
+  over a pending passive restore. No reading position is written to disk, XDG state or preferences.
+
+U1.7 search inside Preview
+  Ctrl+F while the Markdown Viewer has focus opens a Viewer-local native search bar. Search is
+  literal and single-line, with Previous, Next and Match Case; F3 and Shift+F3 continue to navigate
+  while the Viewer search bar is hidden. The Viewer reuses Graphium's existing Unicode literal-search
+  semantics rather than adding regex, fuzzy matching or a second search engine. Search follows the
+  text actually rendered in the preview, including native table-cell text; successfully rendered
+  images are not treated as searchable text. Results wrap in visual order and only change Viewer
+  presentation. Search does not move the editor caret, edit document text, create Undo history or
+  change Saved/Modified. A live Viewer refresh rebuilds the transient result list from the new
+  projection without automatically jumping to a result. Closing the Viewer discards query/results;
+  there is no search index, worker, history database or persistent Preview-search state.
+
+U1.8 Source | Preview split
+  View -> Source | Preview adds the same native Viewer surface to the right of the source editor in a
+  GTK horizontal split. The editor Gtk.TextBuffer remains the only mutable document authority: the
+  Preview side is read-only and consumes the same shared Viewer plan as the separate Markdown Viewer
+  window. If both presentations are open, one live source snapshot and one plan feed both surfaces;
+  U1.8 does not introduce another Markdown parser, editor, session, save path or refresh authority.
+  The split is optional and off by default. Its compact Preview close button routes through the same
+  stateful View action. Focus Mode hides it temporarily without changing that action state; live edits
+  made during Focus are projected when the split returns. Hiding and showing the split reuses the
+  already constructed Viewer surface and its transient U1.6/U1.7 presentation state. split geometry is session-only and is not written to preferences, XDG state or the document.
+
+Bounded Viewer scope
+  The Viewer remains native: no WebKit, HTML browser, WYSIWYG editor, GtkSourceView replacement,
+  Pandoc live-render daemon, worker process, image watcher/cache, table model/cache or persistent
+  preview state. Closing the Viewer discards its presentation buffer, link state, embedded table
+  widgets and transient U1.6 reading position; reopening it projects a fresh snapshot of the current
+  editor text.

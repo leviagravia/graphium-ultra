@@ -1,0 +1,58 @@
+GRAPHIUM G06 — INTEGRATED CHECKPOINT FAILURE REAUDIT
+Date: 2026-08-15
+
+STATUS
+R1 operational FAIL: PACKAGING_DIRECTORY_MODE_DEFECT; product verdict NOT REACHED.
+R2 operational FAIL: TRUE_GTK_GATE_MODAL_LIFECYCLE_OWNERSHIP_DEFECT; product verdict NOT REACHED.
+INTEGRATED_CHECKPOINT_LINE=RETIRED_AFTER_2_OF_2_OPERATIONAL_FAILS
+G06_PRODUCT_RUNTIME_FAIL=NO_EVIDENCE
+
+R2 FORENSIC ROOT CAUSE
+The G06 True-GTK View gate opened crlf.txt, inserted X to verify Compact Status projected
+Modified, then immediately called window.open_path(one-mib-multiline.txt). Graphium's
+published lifecycle correctly detects the Modified state and synchronously runs the real
+unsaved-changes Gtk.MessageDialog. The automated G06 View gate had neither restored a
+clean state nor scheduled/owned a dialog response. The process therefore remained in the
+nested modal loop until the outer 90-second runner timeout. The user screenshot exactly
+showed crlf.txt (Modified), status UTF-8 · CRLF · Modified, and the expected
+"Save changes before continuing?" dialog.
+
+MATURE-SOURCE / PUBLISHED-GATE COMPARISON
+1. Mousepad 0.7.0 plugins/test-plugin/test-plugin.c explicitly owns dialogs during automated
+   GUI actions: it searches visible GtkDialog toplevels and calls gtk_dialog_response().
+   Lesson: if an automated scenario can legitimately create a modal dialog, response
+   ownership must be established before invoking the action.
+2. Published Graphium G04 True-GTK gate saves and returns to the exact Saved state before
+   opening the next large-file fixture. It therefore preserves lifecycle scenario isolation.
+3. Published Graphium G05 True-GTK gate uses establish(..., clean=True) between independent
+   Search scenarios and schedules explicit callbacks only for dialogs that are themselves
+   part of the assertion (Go to Line, renderer warning).
+
+DECISION
+ADOPT: explicit scenario lifecycle boundaries. Every automated fixture Open not intended to
+test unsaved lifecycle must start from session.modified == False.
+ADOPT: fail-fast helper open_clean() that refuses to call product open_path() from Modified
+state unless the test explicitly owns a dialog-response plan.
+ADOPT: phase markers around modal-capable boundaries so a bounded runner reports the exact
+last completed phase.
+REJECT: generic auto-cancel of every GtkDialog in G06 View gate. That would hide accidental
+lifecycle crossings and can turn a real fixture Open into a false negative.
+REJECT: weakening Graphium's unsaved-change prompt or lifecycle semantics. The product did
+exactly the correct thing.
+
+STATIC REPAIR
+- After verifying Compact Status -> Modified, invoke real Graphium Undo and assert exact
+  CRLF editor text plus status UTF-8 · CRLF · Saved.
+- Only then begin the 1 MiB View scenario.
+- Route all fixture Opens through open_clean(), which fails immediately if session.modified.
+- Add source-contract regression test proving this ownership boundary remains present.
+- No product runtime code changed.
+- No new desktop run authorized or prepared.
+- No Git mutation.
+
+FULL BOUNDARY CLOSURE
+The complete mature-source closure of True-GTK -> modal -> lifecycle -> timeout ownership is recorded in:
+  evidence/G06_TRUE_GTK_MODAL_LIFECYCLE_TIMEOUT_OWNERSHIP_AUDIT_20260815.txt
+FULL_BOUNDARY_AUDIT=PASS
+INTEGRATED_CHECKPOINT_R3=FORBIDDEN
+NEXT_T480_RUN=PRODUCT_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION

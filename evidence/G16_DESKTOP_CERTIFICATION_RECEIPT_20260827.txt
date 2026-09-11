@@ -1,0 +1,94 @@
+GRAPHIUM G16 — DESKTOP CERTIFICATION RECEIPT
+Date: 2026-08-27
+Status: CERTIFIED / PUBLICATION AUTHORIZED / FINALIZER PENDING
+
+CANONICAL BASELINE
+==================
+Repository: /home/luciano/Projects/graphium-work
+Branch: main
+Remote: https://github.com/leviagravia/graphium.git
+Expected publication parent HEAD: 15ae13fa153d77db74470d5718e8ab9bbbb5708c
+Expected publication parent tree: 0bb9335c717f371481c752818c5f83fdb9cb16f3
+
+G16 CANDIDATE R1 EXACT IDENTITY
+===============================
+Version: 0.0.16
+Source tree: 48ef29541e1068cb890c305c4ddfa57aab7310bd
+Product tree: e09d45ec07aad4956c0edead777cb61588eb758a
+Tests tree: f86a01225586cb88133c053c21e9829f82ab5581
+User docs tree: 8f5d3ef7dbe936eab18c2ed8447a487a6fe337df
+Bin tree: 585f06bf0ad4dada4675bfd5c11eb9fc793057ef
+Data tree: 042e5dc2d043061c89e33170f5e35cd54a17e328
+Candidate attempts used: 1/2
+Candidate attempts remaining: 1/2
+
+PERMANENT QUALIFICATION AUTHORITY
+=================================
+Behavioral: 190/190 PASS
+Integration: 181/181 PASS authority adopted from byte-identical qualified integration source; known sandbox fake-Hunspell startup timing sensitivity is not a product regression.
+Packaging/Release: 54/54 PASS
+
+G16 TRUE-GTK / REAL PLATFORM AUTHORITY
+======================================
+About application logo:
+  exact Graphium logo identity PASS in source and staged-installed projection;
+  image-missing placeholder rejected.
+
+Line-number gutter:
+  Dark editor family PASS: gutter/text=(30,30,30);
+  Light editor family PASS: gutter/text=(255,255,255);
+  black Light column rejected;
+  System restoration PASS;
+  document text neutrality PASS.
+
+Real Hunspell it_IT:
+  /usr/bin/hunspell discovery PASS;
+  /usr/share/hunspell/it_IT discovery PASS;
+  real multi-record `NON-CANDIDATE` group PASS with 2 records;
+  complete response group consumed;
+  next request synchronized;
+  child reaped;
+  real Gtk spell dialog PASS;
+  false installation message rejected.
+
+About Credits:
+  first automated probe INVALID HARNESS before product execution because its guard matched itself;
+  exactly one user-authorized harness-only reissue, SOURCE byte/mode-identical;
+  reissue PASS in source and staged-installed projection;
+  Light background=(255,255,255), foreground=(32,32,32), contrast=16.29;
+  Dark background=(30,30,30), contrast=15.31;
+  System exact restoration to baseline=(46,46,51), contrast=9.66;
+  About-logo regression PASS.
+
+FINAL USER DESKTOP VERIFICATION
+===============================
+Installed package identity: graphium 0.0.16-2
+Help > About > Graphium logo: PASS
+Help > About > Credits in Light mode: PASS
+Light + Line Numbers gutter: PASS
+Check Spelling > it_IT: PASS
+Uppercase / Lowercase keyboard shortcuts: PASS
+FINAL_DESKTOP_VALIDATION=PASS
+KNOWN_USER_VISIBLE_G16_DEFECTS=0_OPEN
+
+GITHUB README AUTHORITY
+=======================
+The complete GitHub README V2 is embedded verbatim in the canonical MO.
+README SHA-256: 4ecf8ea7b4cf9ea4ced9fa7c49bd86f90ca272698072fcd3c42f3b17f09e560b
+
+PUBLICATION BOUNDARY
+====================
+User publication authorization: YES
+Publication commit subject: G16: finalize core corrective release
+Candidate->publication changed paths: exactly 5
+No new product/T480/manual delta permitted during publication.
+
+G16_CANDIDATE_R1=DECLARED_AND_CERTIFIED
+G16_PUBLICATION_AUTHORIZED=YES
+G16_PUBLICATION_COMPLETE=NO
+PRODUCT_FAILS=0
+MANUAL_DESKTOP_VERIFICATION=PASS
+GIT_MUTATION=NO_BY_THIS_RECEIPT
+GRAPHIUM_PLUS=DEFINED_NOT_OPENED
+GRAPHIUM_ULTRA=DEFINED_NOT_OPENED
+FINAL_PHASE=G16_DESKTOP_CERTIFIED_PUBLICATION_FINALIZER_PENDING

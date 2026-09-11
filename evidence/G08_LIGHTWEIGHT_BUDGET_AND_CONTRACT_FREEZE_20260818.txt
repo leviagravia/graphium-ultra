@@ -1,0 +1,240 @@
+GRAPHIUM G08 — CONTRACT FREEZE
+Date: 2026-08-18
+Published baseline commit: 7a3f49218dbabdbd6e47114a5fde2f4999f9c841
+Published baseline tree:   198164be38e77538b92f45d5d53fe4b0c1929955
+
+G08_CONTRACT=FROZEN
+G08_IMPLEMENTATION=NOT_STARTED
+G08_CANDIDATE_ATTEMPTS_CONSUMED=0
+
+===============================================================================
+1. SCOPE / ANTI-SCOPE
+===============================================================================
+
+IN SCOPE
+  File -> Page Setup…
+  File -> Print Preview
+  File -> Print…
+  Lazy Page Setup persistence.
+  Thin GTK3 print adapter with Pango/Cairo.
+  Native GTK preview.
+  G08 startup-isolation qualification.
+
+OUT OF SCOPE
+  GtkSourceView, syntax print, line-number print options, print preference platform, custom preview,
+  print workers/services, cloud/network printing integration beyond what GTK's standard backend
+  already exposes, persistent printer history, document conversion/export framework.
+
+===============================================================================
+2. COMMAND SURFACE
+===============================================================================
+
+File after G08:
+  New
+  Open…
+  Open Recent >
+  Save
+  Save As…
+  Save a Copy…
+  Save Version Copy…
+  Properties…
+  Page Setup…
+  Print Preview
+  Print…
+  Quit
+
+Accelerators:
+  Print…       Ctrl+P
+  Print Preview Ctrl+Shift+P
+  Page Setup…  none
+
+No G09-G11 placeholder commands.
+
+===============================================================================
+3. OWNERSHIP / LAZINESS
+===============================================================================
+
+- G08 printing lives in graphium.adapters.gtk, not GraphiumCore/application/domain infrastructure.
+- graphium.adapters.gtk.printing (final module name may vary only mechanically) is NOT imported by
+  window.py at module import time.
+- GraphiumWindow may hold only a None lazy reference before first print-family activation.
+- First Page Setup/Preview/Print activation constructs the print controller and loads Page Setup.
+- No PrintOperation survives an operation; create one per Preview/Print invocation.
+- No worker, thread, timer, idle service or background queue.
+
+===============================================================================
+4. PAGE SETUP AUTHORITY
+===============================================================================
+
+Persistence:
+  XDG_CONFIG_HOME/graphium/page-setup.ini
+  product-local, mode 0600, complete-temp + atomic replace.
+  GTK native GtkPageSetup file serialization is the payload authority; Graphium owns location,
+  lifecycle and acceptance semantics rather than reimplementing paper-size internals.
+
+Load:
+  first print-family action only.
+  missing/corrupt/unreadable => fresh Gtk.PageSetup default, no automatic repair write.
+
+Page Setup action:
+  opens GTK's standard Page Setup dialog against a copy/current accepted setup.
+  Cancel => exact no-op.
+  Accept => persist candidate first; only after persistence succeeds publish it as active setup.
+  Persistence failure => warning; prior active setup remains authoritative.
+
+Print/Preview never need to write Page Setup in the frozen v1 model; Page Setup is changed through
+its dedicated command. This avoids duplicate configuration surfaces.
+
+===============================================================================
+5. PRINT SETTINGS
+===============================================================================
+
+GtkPrintSettings is process-memory convenience only in G08.
+  - start with a fresh Gtk.PrintSettings on first print-family use;
+  - Print APPLY may retain a copy for the next Print/Page Setup in the same process;
+  - Cancel/Error/Preview do not advance it;
+  - no persistent printer selection/copies/backend state file in G08.
+
+===============================================================================
+6. CONTENT SNAPSHOT / RENDERING
+===============================================================================
+
+On Preview/Print activation capture once:
+  - exact live GtkTextBuffer text;
+  - display title = basename of active logical path, else Untitled;
+  - persistent base font family + base point size (NOT transient Zoom).
+
+Rendering:
+  - GtkPrintOperation;
+  - Pango layout + Cairo through GtkPrintContext;
+  - page-width word/character-safe wrapping independent of screen Word Wrap;
+  - preserve ordinary text/newlines/tabs as rendered plain text;
+  - minimal fixed title and page-number information;
+  - no line-number gutter, syntax colors, theme background or editor chrome.
+
+Pagination authority:
+  Pango layout geometry under the actual GtkPrintContext, grouping complete visual layout lines into
+  pages. Do NOT derive pages from Python splitlines(), a fixed characters-per-page rule or screen
+  viewport geometry. Do not split a visual Pango line across page boundaries.
+
+===============================================================================
+7. MODAL / LIFECYCLE CONTRACT
+===============================================================================
+
+Page Setup / Print / Preview are parented to the active GraphiumWindow.
+Print operation is synchronous by default; no allow_async/worker lifecycle is pre-authorized.
+Native GTK owns the preview UI. Graphium does not intercept the preview signal to create a custom UI.
+
+Cancel:
+  no warning, no state mutation.
+Error:
+  show one Graphium error surface; restore editor usability/focus.
+Success:
+  release operation/layout references before returning to normal editing.
+Repeated operations:
+  each uses a fresh GtkPrintOperation; no stale callback/layout/page count survives.
+
+===============================================================================
+8. DOCUMENT / FILE NEUTRALITY — HARD GATE
+===============================================================================
+
+Before and after Page Setup / Preview / Print (success, cancel or error), except the explicitly
+accepted Page Setup config or in-process print-settings convenience:
+  buffer text identical;
+  logical/canonical document binding identical;
+  accepted DocumentFileState identical;
+  current editor state ID identical;
+  saved editor state ID identical;
+  Saved/Modified identical;
+  DeltaHistory/Undo/Redo identical;
+  Recent identical;
+  target document bytes on disk identical.
+
+Printing a Modified or Untitled document is allowed and prints the current live snapshot without Save.
+
+===============================================================================
+9. STARTUP-ISOLATION GATE
+===============================================================================
+
+Static/runtime boundaries:
+  - no top-level import of the print implementation from normal startup modules;
+  - after GraphiumWindow construction, print implementation module absent from sys.modules;
+  - zero GtkPrintOperation/GtkPageSetup print-controller creation before user action;
+  - zero page-setup path read/stat/mkdir/write before user action.
+
+Hostile dormant-state tripwire:
+  A fresh isolated XDG config may place a named FIFO at the future page-setup path. Normal Graphium
+  startup/open/FIRST_EDITABLE must complete without touching/blocking on that FIFO.
+
+Performance protocol:
+  - one uncounted priming process + >=7 fresh measured processes per workload;
+  - same FIRST_EDITABLE/FIRST_VISIBLE ownership rules already frozen in G04/G06;
+  - must continue to pass permanent G04 self-regression limits;
+  - additionally compare exact G08 candidate against a fresh same-session published-G07 reference.
+
+Incremental dormant-print limits versus fresh published G07 medians:
+  time: <= max(G07 * 1.10, G07 + 25 ms)
+  RSS:  <= max(G07 * 1.10, G07 + 8 MiB)
+  workloads: empty, 5KiB, 1MiB, 10MiB where the existing oracle supports them.
+
+Common FIRST_VISIBLE comparator receipt against Leafpad/L3afpad/Mousepad/FeatherPad remains required;
+no cross-product FIRST_EDITABLE claim before G12.
+
+===============================================================================
+10. HOSTILE / TRUE-GTK TEST FREEZE
+===============================================================================
+
+Automated/True-GTK must cover at least:
+  1. command/menu/accelerator exactness and no collision;
+  2. lazy module/object/I/O startup boundary;
+  3. missing/corrupt Page Setup fallback without startup mutation;
+  4. Page Setup accept persistence + restart reload;
+  5. Page Setup cancel and persistence-failure rollback;
+  6. Preview native lifecycle close/cancel and repeated preview;
+  7. Print dialog cancel and error neutrality;
+  8. successful Print-to-File/PDF through standard GTK backend where environment supports it;
+  9. Modified and Untitled live-snapshot printing without Save/savepoint/Recent mutation;
+ 10. base font used while transient Zoom is ignored;
+ 11. screen Line Numbers and Word Wrap do not leak into print semantics;
+ 12. Unicode, combining characters, tabs, blank lines and multi-page wrapping;
+ 13. no visual Pango line split by pagination;
+ 14. 1MiB explicit pagination/preview bounded responsiveness;
+ 15. all G04-G07 regressions, strict topology and startup gates.
+
+PyGObject/GTK3 boundary rule:
+  Local build environment lacks gi. Before any desktop candidate, run a T480 NON-CANDIDATE binding
+  probe for exact Gtk3/Pango PyGObject signatures/lifetimes used by Page Setup, PrintOperation and
+  pagination. A binding-probe failure is NOT a product candidate FAIL and must trigger the ordinary
+  failure-specific mature/source boundary audit before repair.
+
+===============================================================================
+11. MANUAL DESKTOP FREEZE
+===============================================================================
+
+Exactly 6 manual desktop tests for the eventual G08 candidate:
+  1. Page Setup accept + persistence across restart.
+  2. Page Setup cancel + editor focus/neutrality.
+  3. Multi-page native Print Preview layout/header/page numbering and clean close/reopen.
+  4. Print… -> standard Print-to-File/PDF success plus Cancel path; document remains unchanged.
+  5. Modified/Untitled + Unicode/tabs/wrapping; no implicit Save, no Recent/savepoint/history change.
+  6. View isolation: Zoom/Line Numbers/Word Wrap screen state does not incorrectly alter frozen print
+     font/gutter/page-width semantics; normal editor remains responsive after repeated operations.
+
+Delivery rule remains binding: disclose total=6, then provide exactly 3 frozen tests at a time via
+ONE Bash command that prints them in terminal and launches the isolated candidate. STOP at first FAIL.
+
+===============================================================================
+12. CANDIDATE / GIT GOVERNANCE
+===============================================================================
+
+This freeze consumes NO candidate attempt.
+Implementation must be in an isolated copy; canonical Git remains untouched until publication.
+No desktop candidate may be declared before:
+  - implementation + focused/headless/strict gates PASS;
+  - T480 NON-CANDIDATE PyGObject print-boundary probe PASS;
+  - G08 True-GTK/hostile gates PASS;
+  - startup-isolation + performance gates PASS;
+  - Lightweight Budget PASS.
+
+Any FAIL/STOP => stop, classify ownership/boundary/identity, return to relevant mature source before
+repair, distinguish product vs harness/oracle/environment, then repair. No trial-and-error candidate loop.

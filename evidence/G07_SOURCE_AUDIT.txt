@@ -1,0 +1,131 @@
+GRAPHIUM G07 — PUBLISHED G06 SOURCE AUDIT
+Date: 2026-08-16
+Baseline commit: aae14ef000ea44674cb9bbb7b3a87e3af00c0b18
+Baseline tree:   c2b372082cf44280f9717045578822e7b92bef12
+Verdict: PASS — G07 can be implemented without weakening G01-G06 authorities.
+
+1. COMPOSITION / AUTHORITY TOPOLOGY
+
+Source: graphium/composition.py
+  lines 34-42: GraphiumCore owns session, history, editor, writer, save service, lifecycle,
+  search and view settings.
+  lines 45-53: descriptor freezes document_authority_count=1 and
+  physical_writer_authority_count=1.
+  lines 64-79: build_core creates exactly one DocumentSession and one GuardedFileWriter.
+
+G07 consequence:
+  - one document authority remains one;
+  - one physical writer remains one;
+  - G07 must add services/controllers around these authorities, never a second writer or a
+    second document/session state machine.
+
+2. XDG BOUNDARY
+
+Source: graphium/paths.py lines 28-40
+  Graphium already resolves config/data/cache/state separately and performs no mutation.
+Source: graphium/infrastructure/view_settings_store.py lines 1-5
+  View settings are explicitly convenience configuration, never document authority.
+
+G07 consequence:
+  - recent-file history belongs under XDG_STATE_HOME/graphium, not view.json and not a DB;
+  - Recent must not become a settings/preference platform or a session manager.
+
+3. STRONG ACCEPTED FILE IDENTITY
+
+Source: graphium/domain/document_identity.py
+  lines 28-50: logical path is separate from canonical path and dev/inode object identity.
+  lines 63-93: accepted state already carries encoding/BOM/EOL, size, mtime, mode,
+  read_only, ctime, uid/gid, nlink and SHA-256 content fingerprint.
+
+Source: graphium/infrastructure/document_loader.py
+  lines 35-41: normalize logical path without replacing it by canonical path.
+  lines 58-104: stable read verifies descriptor before/after and verifies logical/canonical
+  namespace still names the same object.
+  lines 177-209: accepted load records logical/canonical identity, disk observation and raw-byte
+  SHA-256 fingerprint.
+
+G07 consequence:
+  Properties does not need a new metadata database. Most facts already exist in the accepted
+  DocumentFileState. Check Now must reuse/refactor this strong observation semantics rather
+  than compare only mtime or react to filesystem events.
+
+4. WHY SAVE A COPY / VERSION COPY CANNOT USE DocumentSaveService.execute_observed()
+
+Source: graphium/application/document_save_service.py
+  lines 32-60: _capture binds a save intent to current session state and serialization profile.
+  lines 103-116: execute_observed serializes and delegates physical commit to the sole writer.
+  lines 118-126: after every commit, it calls session.accept_committed_save().
+
+Source: graphium/application/document_session.py
+  lines 236-256: accept_committed_save changes logical binding/file state and saved state ID.
+
+G07 consequence:
+  Save a Copy / Save Version Copy MUST NOT call execute_observed(). They need a separate
+  GTK-free non-binding copy service that:
+    a. captures the exact synchronized current editor state;
+    b. uses profile_for_document + serialize_document;
+    c. uses the existing GuardedFileWriter observe/commit authority;
+    d. deliberately does NOT call accept_committed_save or any history mutation.
+
+5. GUARDED WRITER REUSE — AND ITS LIMIT FOR PROPERTIES
+
+Source: graphium/infrastructure/guarded_file_writer.py
+  lines 196-271: observe_target freezes absent/existing target and parent identity; ordinary
+  Save can require exact accepted baseline.
+  lines 285-308: late revalidation rejects appeared/disappeared/replaced/retargeted targets.
+  lines 355 onward: commit owns the physical write path.
+  lines 123-128: writer observation rejects hardlinked or read-only existing overwrite targets.
+
+G07 consequence:
+  - copy operations SHOULD reuse this writer: it already provides exact target observation,
+    no-overwrite semantics for absent targets, late revalidation and atomic guarded commit.
+  - Properties Check Now MUST NOT use GuardedFileWriter.observe_target as its observation
+    authority, because Properties must be able to describe read-only and hardlinked files
+    rather than reject them as unsafe write targets.
+  - Extract/refactor one read-only strong observer from the G01 loader semantics, not from the
+    writer's write-safety policy.
+
+6. FILE LIFECYCLE REUSE FOR OPEN RECENT
+
+Source: graphium/application/file_lifecycle.py
+  lines 155-167: document replacement first resolves Modified state with Save/Discard/Cancel.
+  lines 179-205: open_document(path) fully loads and renderability-checks before replacing the
+  active buffer/session/history; failed Open preserves the current document.
+
+G07 consequence:
+  Every Recent selection MUST route through this same open_document(path) lane. No recent-file
+  shortcut may bypass unsaved-change protection, the loader, strong identity, encoding/content
+  validation or the pathological-line renderability guard.
+
+7. COMMAND / MENU BOUNDARY
+
+Source: graphium/application/commands.py
+  through G06 the command catalog is the single command authority.
+Source: graphium/adapters/gtk/window.py
+  current top menus are File/Edit/Search/View/Help and are built from COMMANDS.
+
+G07 consequence:
+  - add only the G07 commands actually available now; no disabled future placeholders;
+  - introduce the target v1 Document menu with Statistics… as its first command;
+  - Open Recent is a dynamic File submenu backed by one parameterized action, not one action
+    object per historical file in the application layer;
+  - no new default accelerators are required for G07.
+
+8. DIALOG BOUNDARY
+
+Source: graphium/adapters/gtk/dialogs.py
+  existing lifecycle dialogs are small, modal and adapter-owned.
+
+G07 consequence:
+  Properties and Statistics remain GTK rendering/dialog adapters over GTK-free projections.
+  Business rules, observation comparison, recent ordering and statistics calculation do not
+  belong in Gtk widgets.
+
+9. DOCUMENTARY CARRY-FORWARD
+
+The published G06 tree intentionally still contains pre-publication wording in the canonical
+roadmap/MO (for example G06 shown as open/candidate-ready), because publication truth was
+established by the finalizer and external publication receipt after the fixed commit tree was
+calculated. This is not a product defect. The first G07 candidate must update the three
+canonical authorities to record G06 CLOSED/CERTIFIED/PUBLISHED and G07 contract state while
+preserving the canonical-document cap of 3.

@@ -1,0 +1,51 @@
+GRAPHIUM G15-S3 — HUNSPELL DICTIONARY SELECTION
+NON-CANDIDATE LOCAL IMPLEMENTATION RECEIPT
+Date: 2026-08-26
+
+AUTHORITY
+- Mandatory source-first mature-source audit completed before implementation.
+- Frozen corpus: Mousepad 0.7.0, gedit, GNOME Text Editor, FeatherPad, Leafpad/L3afpad, direct Hunspell CLI.
+- No Candidate declaration and no canonical Git mutation.
+
+RED -> GREEN
+- Initial focused RED: new dictionary-discovery/session-selection authorities absent from exact G15-S2 source.
+- Focused boundary GREEN: 26/26 PASS across existing external spell tests plus G15-S3 dictionary tests.
+- Additional focused static/release anti-bloat checks PASS.
+
+IMPLEMENTED CONTRACT
+- Existing Check Spelling dialog Dictionary row is a real combo.
+- System default remains first and always usable.
+- Installed dictionaries are discovered only after explicit Check Spelling invocation.
+- Discovery uses hunspell -D, shell=False, LC_ALL=C, bounded timeout/output/count/path budgets.
+- Human headings/prose are ignored; only absolute base paths with real .aff + .dic pairs are selectable.
+- Duplicate dictionary IDs are not collapsed; parent-path context disambiguates them.
+- System default pipe argv remains without -d.
+- Explicit dictionary adds exactly one separate -d <verified-base-path> pair.
+- Explicit base is revalidated when the pipe child starts.
+- Selection is dialog-local only: no ViewSettings/JSON/document metadata/restart persistence.
+- Switching dictionary fences stale callbacks, reaps old session, checks editor state identity,
+  snapshots current text in a fresh SpellCheckController, resets Ignore All, and restarts from the beginning.
+- Existing Replace edits remain normal Graphium Undo/Redo edits.
+- No GUI-language selector, gspell/libspelling migration, new module/framework/dependency/daemon/service.
+- One existing single-worker executor is reused; at most one Hunspell child may exist at a time.
+
+LOCAL PERMANENT QUALIFICATION
+Behavioral: 190/190 PASS
+Integration: 176/176 PASS
+Packaging/Release: 27/27 PASS
+TOTAL: 393/393 PASS
+
+LIGHTWEIGHT / SCOPE
+G15_S3_NEW_PRODUCT_MODULES=0
+G15_S3_NEW_DEPENDENCIES=0
+G15_S3_NEW_PERSISTENT_KEYS=0
+G15_S3_STARTUP_DISCOVERY=NO
+G15_S3_GUI_LANGUAGE_SELECTOR=NO
+G15_S3_MANUAL_TESTS_PLANNED=0
+
+STATE
+G15_S3_STATUS=NONCANDIDATE_LOCAL_PASS_TRUE_GTK_PENDING
+CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+VERSION=0.0.14

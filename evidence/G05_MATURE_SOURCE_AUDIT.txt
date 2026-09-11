@@ -1,0 +1,134 @@
+GRAPHIUM G05 FALSIFICATION-ORIENTED MATURE-SOURCE AUDIT
+Date: 2026-08-14
+Scope: Find / Find Next / Find Previous / Replace / Replace All / Go to Line
+
+Sources directly inspected:
+- L3afpad source: src/search.c and project README.
+- FeatherPad source: featherpad/replace.cpp, project Help/README.
+- GTK 3 official Gtk.TextBuffer documentation.
+- GtkSourceView SearchContext documentation as a performance/complexity contrast.
+
+DECISION 1 — Search UI shape
+Graphium assumption under test:
+  A compact inline search surface is preferable to a large dialog/platform.
+Stress/alternative:
+  L3afpad uses simple GtkEntry fields in modal Find/Replace dialogs. FeatherPad separates a search bar and replacement widget.
+Why alternative works:
+  Both keep the query/replacement input single-line and avoid document/project search infrastructure.
+Graphium decision:
+  ADAPT. Use one lightweight in-window SearchBar, hidden when inactive. Find mode shows one Gtk.Entry; Replace mode adds one Gtk.Entry and explicit Replace / Replace All buttons. No history database, no persistent search panel, no project search.
+
+DECISION 2 — Search options
+Graphium assumption under test:
+  Common options should not be copied merely because mature editors have them.
+Stress/alternative:
+  L3afpad exposes Match Case. FeatherPad has a richer search feature set including regex/whole-word/highlighting.
+Why alternative works:
+  Richer editors serve broader workflows, but each extra mode expands state and edge cases.
+Graphium decision:
+  ADOPT Match Case only. DEFER Whole Word. REJECT regex/fuzzy/multi-file for v1. This is the smallest option set supported by direct lightweight-editor evidence.
+
+DECISION 3 — Wrap behavior
+Graphium assumption under test:
+  Wrap can be implicit rather than another checkbox/state.
+Stress/alternative:
+  L3afpad automatically retries from start/end when no forward/backward match remains.
+Graphium decision:
+  ADOPT unconditional one-time wrap for Find Next/Previous. No persistent wrap-search preference.
+
+DECISION 4 — Unicode case-insensitive matching
+Graphium assumption under test:
+  Python/ASCII lowercase comparison would be sufficient.
+Contradictory evidence:
+  L3afpad carries specialized GtkSourceIter search code and its lineage explicitly addressed Unicode/multibyte behavior; Unicode case-insensitive matching can change folded length.
+Graphium decision:
+  REJECT ASCII/lower-only matching. ADOPT Unicode casefold with exact original-offset boundary mapping. Case-sensitive search remains exact codepoint literal matching. Canonical-equivalence normalization is not expanded into a G05 platform; it may be reconsidered only with explicit evidence/tests.
+
+DECISION 5 — Current match
+Graphium assumption under test:
+  Search needs a separate highlight-all subsystem.
+Contradictory/alternative evidence:
+  GtkSourceView supports asynchronous whole-buffer occurrence scanning/highlighting; FeatherPad highlights matches and caps replacement highlighting in some large cases.
+Why alternative works:
+  Those products accept a larger search subsystem/state model.
+Graphium decision:
+  REJECT eager highlight-all in G05. The current match is the native selection. This eliminates background scanning, decoration state and whole-document recomputation on every query edit.
+
+DECISION 6 — Replace One acquisition semantics
+Graphium assumption under test:
+  Replace should require the selection already to be an exact match.
+Contradictory evidence:
+  FeatherPad explicitly supports replacement after searching and its recent work addressed selected-text forward/backward asymmetries. A strict exact-selection gate can make Replace appear unavailable despite valid matches.
+Graphium decision:
+  ADAPT one-click acquisition: if current selection is the exact active match, replace it; otherwise Find Next from the current navigation anchor and replace that match in the same activation. Then select the next match if one exists. One replacement = one Undo group.
+
+DECISION 7 — Replace All grouping
+Graphium assumption under test:
+  Repeated individual replacements are acceptable if the text result is correct.
+Contradictory evidence:
+  FeatherPad wraps Replace All in QTextCursor::beginEditBlock()/endEditBlock(). L3afpad explicitly sequences replace-all Undo behavior.
+Graphium decision:
+  ADOPT one logical Undo transaction and one editor state-ID advance for the whole Replace All.
+
+DECISION 8 — GTK user action as transaction
+Graphium assumption under test:
+  Gtk.TextBuffer begin/end_user_action could provide atomic replace rollback.
+Contradictory evidence:
+  GTK documentation defines it as the boundary of one user-visible operation; insertion/deletion still occurs in default signal handlers. It does not promise transactional rollback.
+Graphium decision:
+  REJECT user-action grouping as safety transaction. G05 adds Graphium-owned programmatic delta application with expected-delete verification and inverse rollback.
+
+DECISION 9 — Renderer safety during Replace All
+Graphium assumption under test:
+  Programmatic replacement can simply disable G04 guards.
+Contradictory evidence:
+  G04 already demonstrated Gtk.TextView pathological-long-line failure; a generic bypass would weaken a published invariant.
+Graphium decision:
+  REJECT generic guard bypass. G05 replacement fields are single-line. The complete final text is computed and checked with the G04 renderability authority before mutation. Operations are then applied under the existing replay/restoring suppression path only as a prevalidated Graphium transaction. Ordinary user edits remain guarded normally.
+
+DECISION 10 — Replace All match semantics
+Graphium assumption under test:
+  Each inserted replacement may participate in later matching during the same Replace All.
+Stress/alternative:
+  Mature replace-all loops can be sensitive to cursor movement/replacement content.
+Graphium decision:
+  REJECT cascading semantics. Freeze non-overlapping matches from the original source; replacement text is never searched again during that activation.
+
+DECISION 11 — Search performance architecture
+Graphium assumption under test:
+  A background index/cache is needed for responsiveness.
+Contradictory evidence:
+  GtkSourceView has an asynchronous scan/cache architecture, but this carries persistent search context/highlight state. Lightweight L3afpad uses direct search.
+Graphium decision:
+  ADAPT direct explicit-command scanning. No background worker/index/cache in G05. Measure realistic 1 MiB and 10 MiB explicit Find/Replace behavior; escalate only if evidence shows a real responsiveness failure.
+
+DECISION 12 — Go to Line
+Graphium assumption under test:
+  Go to Line needs navigation infrastructure.
+Contradictory evidence:
+  L3afpad uses a bounded line-number spinner against current max line.
+Graphium decision:
+  ADOPT simple 1-based line entry/spinner, bounded to document line count, then place cursor and focus editor. No bookmarks/navigation history.
+
+LIGHTWEIGHT BUDGET
+ADOPT: literal current-document search, Match Case, one-wrap navigation, Replace One/All, Go to Line.
+ADAPT: inline hidden SearchBar; Graphium-owned prevalidated delta transaction.
+DEFER: Whole Word, canonical-equivalence search, search history, optional highlight-all.
+REJECT v1: regex, fuzzy, multi-file search, project search, persistent search index, background highlight scanner.
+
+G05_MATURE_SOURCE_AUDIT=PASS
+LIGHTWEIGHT_BUDGET_PREIMPLEMENTATION=PASS
+
+
+DECISION 13 — Gtk.SearchBar activation and close affordance
+Graphium assumption under test:
+  Escape-only dismissal and generic key forwarding might be sufficient/convenient.
+Contradictory/clarifying GTK 3 API evidence:
+  Gtk.SearchBar documents connect_entry() for a descendant entry, an optional native close
+  button, and handle_event() only when applications want ordinary top-level key presses to
+  start search. It separately notes that Ctrl+F/menu activation should be app actions.
+Graphium decision:
+  ADOPT connect_entry() and the native close button because Graphium has no search-toggle
+  button. REJECT top-level handle_event() forwarding: normal document typing must remain
+  editing, while Ctrl+F/menu explicitly enters search mode. F3/Shift+F3 keep query focus
+  when the SearchBar is already visible.

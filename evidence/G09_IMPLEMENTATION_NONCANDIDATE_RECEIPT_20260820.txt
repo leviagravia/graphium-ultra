@@ -1,0 +1,40 @@
+GRAPHIUM G09 — ISOLATED IMPLEMENTATION NON-CANDIDATE RECEIPT
+Date: 2026-08-20
+Published G08 baseline commit: 5d1c342eafbff8b4b38f0656e0dbc1fe315362b4
+Published G08 baseline tree: 6535bf7d560ceaed3e31f407317fde0a8618ba47
+
+CLASS=NONCANDIDATE_IMPLEMENTATION
+G09_IMPLEMENTATION=BUILT_IN_ISOLATED_COPY
+G09_DESKTOP_CANDIDATE=NOT_DECLARED
+CANDIDATE_ATTEMPTS_CONSUMED=0/2
+CANONICAL_GIT_MUTATION=NONE
+
+Implemented exactly six explicit actions under Edit -> Transform Text:
+  Uppercase
+  Lowercase
+  Duplicate Line / Selection
+  Move Lines Up
+  Move Lines Down
+  Trim Trailing Spaces
+
+Architecture:
+  GTK_FREE_PLANNER=graphium/application/text_transform.py
+  MUTATION_AUTHORITY=NativeEditorController.apply_prevalidated_programmatic_group
+  SECOND_MUTATION_ENGINE=NO
+  PERSISTENT_CONTROLLER=NO
+  BACKGROUND_WORKER_TIMER_CACHE=NO
+  TOP_LEVEL_FORMAT_MENU=NO
+  GTKSOURCEVIEW=NO
+
+Build-host qualification:
+  G09_FOCUSED_TESTS=35/35 PASS
+  FULL_HEADLESS_SUITE=354/354 PASS
+  G09_TRUE_GTK=NOT_RUN_BUILD_HOST_PYGOBJECT_UNAVAILABLE
+  T480_PRE_CANDIDATE_QUALIFICATION=PENDING
+
+Semantics proven headlessly include Unicode expansion, forward/reversed selections, final-EOL
+neutrality, terminal sentinel rules, selection endpoint affinity, changed-span cap 50,000/50,001,
+renderer fail-closed checks, exact no-op planning and existing G05 authority reuse.
+
+This receipt does not claim desktop certification and consumes no candidate attempt.
+FINAL_PHASE=G09_ISOLATED_IMPLEMENTATION_HEADLESS_PASS_T480_PRE_CANDIDATE_PENDING

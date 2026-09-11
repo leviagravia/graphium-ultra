@@ -1,0 +1,90 @@
+GRAPHIUM G08 — EXACT PUBLISHED G07 SOURCE AUDIT
+Date: 2026-08-18
+Published commit: 7a3f49218dbabdbd6e47114a5fde2f4999f9c841
+Published tree:   198164be38e77538b92f45d5d53fe4b0c1929955
+Verdict: PASS — G08 can be added without changing G01-G07 document/write authorities.
+
+1. FILE COMMAND / MENU AUTHORITY
+
+Source: graphium/application/commands.py lines 20-52
+  COMMANDS is the single product command catalog. G07 File currently contains New, Open,
+  Open Recent, Save, Save As, Save a Copy, Save Version Copy, Properties, Quit.
+
+Source: graphium/adapters/gtk/window.py lines 93-141 and 153-176
+  Window actions are created from COMMANDS and the menubar is projected from the same catalog.
+
+G08 consequence
+  Add exactly three File commands at the frozen position after Properties and before Quit:
+    Page Setup…
+    Print Preview
+    Print…
+  No disabled future placeholder and no new top-level menu.
+
+2. CURRENT STARTUP PATH
+
+Source: graphium/adapters/gtk/application.py
+  do_startup installs accelerators only; the window is created lazily by _ensure_window().
+
+Source: graphium/adapters/gtk/window.py lines 34-91
+  Window initialization creates editor/view/core/actions/menu/signals and applies G06 view state.
+  There is currently no print object, print settings, page setup, Pango/Cairo print layout or
+  print-state file access.
+
+G08 consequence
+  Preserve this boundary. The future print implementation module MUST NOT be imported at module
+  import/window-construction time. It is imported/instantiated only from Page Setup, Preview or
+  Print action activation. Adding three command strings/actions is the only normal-startup cost.
+
+3. COMPOSITION OWNERSHIP
+
+Source: graphium/composition.py lines 34-104
+  GraphiumCore owns the one DocumentSession, one DeltaHistory, one editor authority and one
+  GuardedFileWriter plus G05-G07 controllers. build_core creates no printing infrastructure.
+
+G08 consequence
+  Printing is a GTK presentation/output adapter, not document/core state. Do NOT add a writer,
+  document authority, print service to GraphiumCore, background worker, session manager or DB.
+  build_core remains unchanged unless a later failure-specific audit proves an actual need.
+
+4. XDG AUTHORITY
+
+Source: graphium/paths.py
+  XDG config/data/cache/state paths are resolved without filesystem mutation.
+
+Source: graphium/infrastructure/view_settings_store.py
+  Persistent presentation configuration is product-local and explicit-action driven.
+
+G08 consequence
+  Page Setup is configuration and belongs under XDG_CONFIG_HOME/graphium. It is loaded only on
+  first Page Setup/Preview/Print activation. Missing/corrupt state falls back to GTK defaults and
+  causes no startup repair/write. No printer-history DB or background persistence.
+
+5. VIEW / FONT / ZOOM BOUNDARY
+
+Source: graphium/adapters/gtk/editor_view.py lines 31-91
+  Graphium distinguishes persistent base font from transient zoom. Line numbers are view-only.
+
+G08 consequence
+  Printed body font uses the persistent base font family/size, NOT transient Zoom. Screen Line
+  Numbers are not printed. Screen Word Wrap does not control page-width wrapping. Printing must
+  remain a neutral projection of the live plain-text buffer.
+
+6. DOCUMENT / SESSION NEUTRALITY
+
+G01-G07 already centralize buffer/session/history/savepoint/Recent semantics. G08 has no reason
+for any FileLifecycleController or GuardedFileWriter call.
+
+Frozen consequence
+  Page Setup, Preview and Print MUST NOT mutate buffer bytes, logical/canonical binding,
+  DocumentFileState, current/saved state IDs, DeltaHistory, Undo/Redo, Saved/Modified or Recent.
+  Print/Preview captures current live text once at explicit activation and renders that snapshot.
+
+7. G08 ROADMAP AUTHORITY
+
+Canonical G07 publication source freezes G08 as:
+  File -> Page Setup… / Print Preview / Print…
+  desktop-complete but lazily initialized;
+  Page Setup is Graphium authority rather than fixed inherited constants;
+  startup-isolation/performance evidence is mandatory.
+
+Source-audit result: PASS.

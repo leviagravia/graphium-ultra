@@ -1,0 +1,22 @@
+GRAPHIUM G03 — DEAD / DUPLICATE WRITE-AUTHORITY AUDIT
+Date: 2026-08-14
+
+Static audit of graphium/ after G03 implementation:
+- exactly one runtime class named GuardedFileWriter;
+- authoritative namespace operations os.replace/os.link occur only in
+  graphium/infrastructure/guarded_file_writer.py;
+- no second AtomicWriter/SaveWriter/document writer found;
+- no GtkFileChooser/Gio.FileMonitor authority introduced;
+- no runtime dependency on Calamus;
+- obsolete G00/G01 current verifiers were already removed in G02 and remain absent;
+- historical regression tests/evidence remain useful and are not dead code.
+
+No additional runtime deletion was justified in G03. New writer helpers are all exercised by the
+hostile filesystem suite; speculative cleanup was rejected.
+
+Full-suite release-advance audit:
+- one G02 historical test still asserted current product identity == G02;
+- this was stale release-locking test code, not a G03 product defect;
+- it was replaced by a factual regression assertion that the published G02 runtime authorities
+  remain present. This mirrors the already-corrected G01 historical test policy.
+

@@ -1,0 +1,18 @@
+GRAPHIUM G00 — W116 TECHNOLOGY PROBE — NON-CANONICAL EVIDENCE
+
+Source baseline:
+  Calamus W116 commit 33331672f5ba8fcc6a7e1ede9ab849638579f0c7
+  tree db11fee424273c0a383145c132b645c15581b30a
+
+Observed directly in W116 source:
+  bin/calamus: gi.require_version("Gtk", "3.0")
+  bin/calamus: gi.require_version("Gdk", "3.0")
+  bin/calamus: gi.require_version("Pango", "1.0")
+  calamus_print_runtime.py: Gtk 3 + Pango + PangoCairo
+  calamus_editor.py: Gtk.TextView as direct child of Gtk.ScrolledWindow
+
+G00 technology decision:
+  Python 3 + PyGObject/GTK 3 = ADOPT
+  Gtk.TextView baseline       = ADOPT
+  Pango/PangoCairo printing   = ADOPT
+  GtkSourceView dependency    = REJECT FOR V1 (not needed for extracted scope)

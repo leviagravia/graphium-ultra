@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "work_item": "G02",
+  "graphium_baseline_commit": "bf7878c3cdc5cf895b0ffba86b854860c34936a4",
+  "graphium_baseline_tree": "2334e0c71f01a1b0a30bcb9298911c7c0cafe042",
+  "calamus_source_baseline": {
+    "commit": "33331672f5ba8fcc6a7e1ede9ab849638579f0c7",
+    "tree": "db11fee424273c0a383145c132b645c15581b30a"
+  },
+  "direct_sources": [
+    {
+      "file": "calamus_history.py",
+      "sha256": "eec76da61c78a141f743432f4505d0d6570a90f9960d1ff3a18291b3349cf7d4",
+      "decision": "ADAPT",
+      "graphium_target": "graphium/domain/history.py"
+    },
+    {
+      "file": "calamus_editor_transaction.py",
+      "sha256": "fab2e80320b2ce3ab1ab1e9f5b6a0ba950a899214cee5dd86f3d27f9f9dce911",
+      "decision": "ADAPT",
+      "graphium_target": "graphium/application/editor_transaction.py"
+    },
+    {
+      "file": "calamus_document_session.py",
+      "sha256": "c2bd6e591dc02b3ce6ccb8b60a30bb178d19683ec4697c92e0bb337bb4d5af79",
+      "decision": "ADAPT",
+      "graphium_target": "graphium/application/document_session.py"
+    },
+    {
+      "file": "calamus_document_session_controller.py",
+      "sha256": "72b443c1802e20191522847c69d70596ddbea6134c7ed9128bd0e93c8e3f0e18",
+      "decision": "REVIEW_ONLY",
+      "graphium_target": null
+    },
+    {
+      "file": "calamus_history_runtime.py",
+      "sha256": "849a61e17d9cc1ba0df8dea33ed2010fc9e14deaaf95537474c0e914701074ff",
+      "decision": "REVIEW_ONLY",
+      "graphium_target": null
+    },
+    {
+      "file": "calamus_editor_buffer_adapter.py",
+      "sha256": "12a828525f988fac25d5cd3e40e4741555e5a2435a7a3787ea281ab7df3c95c6",
+      "decision": "DEFER_G04",
+      "graphium_target": "graphium/adapters/gtk/..."
+    }
+  ],
+  "runtime_imports_from_calamus_allowed": false
+}

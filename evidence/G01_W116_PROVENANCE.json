@@ -1,0 +1,34 @@
+{
+  "canonical": false,
+  "work_item": "G01",
+  "source_product": "Calamus Standard Edition",
+  "source_commit": "33331672f5ba8fcc6a7e1ede9ab849638579f0c7",
+  "source_tree": "db11fee424273c0a383145c132b645c15581b30a",
+  "extractions": [
+    {
+      "source_path": "calamus/calamus_document_identity.py",
+      "source_sha256": "f53291c156ed39dca0acec2dd8d7f29491b1dfde8971dbeed76a1a7972c7613a",
+      "target_path": "graphium/domain/document_identity.py",
+      "decision": "EXTRACT_ADAPT_DOMAIN",
+      "notes": "Immutable identity/load value model and typed failures; Graphium naming and plain-text wording."
+    },
+    {
+      "source_path": "calamus/calamus_document_loader.py",
+      "source_sha256": "980578975cf83ae1acd967045370da521694b163f5d50bfe815fc6508edd06b5",
+      "target_path": "graphium/infrastructure/document_loader.py",
+      "decision": "ADAPT_INFRASTRUCTURE",
+      "notes": "Stable byte loader moved behind infrastructure boundary; Graphium naming; explicit large-file threshold argument validation."
+    },
+    {
+      "source_path": "calamus/calamus_document_serializer.py",
+      "source_sha256": "814a65449240f10627c0685ab28b269bb5c6bb1a17ee199a70b723560945a943",
+      "target_path": "graphium/domain/document_serialization.py",
+      "decision": "EXTRACT_ADAPT_DOMAIN",
+      "notes": "Strict pure encoding/BOM/EOL serialization; Graphium mixed-EOL consent wording."
+    }
+  ],
+  "runtime_imports_from_calamus": false,
+  "gtk_required": false,
+  "document_session_imported": false,
+  "physical_writer_imported": false
+}

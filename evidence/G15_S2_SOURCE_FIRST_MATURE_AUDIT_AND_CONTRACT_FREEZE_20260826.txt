@@ -1,0 +1,275 @@
+GRAPHIUM G15-S2 — TAB CONTROLS SIMPLIFICATION
+SOURCE-FIRST MATURE-SOURCE AUDIT + CONTRACT FREEZE
+Date: 2026-08-26
+Mode: NON-CANDIDATE / AUDIT-ONLY / NO PRODUCT MUTATION / NO GIT MUTATION
+
+CURRENT AUTHORITY UNDER AUDIT
+-----------------------------
+Source: G15-S1 Application Icon NON-CANDIDATE source, as carried unchanged in the
+Harness Reissue 1 package subsequently reported PASS by the user on T480.
+G15-S1 result supplied by user:
+  TRUE_GTK_ICON_PROBE=PASS
+  SOURCE_IDENTITY_POST_RUN=PASS
+  PACKAGE_IDENTITY_POST_RUN=PASS
+  MANUAL_TESTS=0
+  CANDIDATE=NO
+  ATTEMPT_CONSUMED=NO
+  GIT_MUTATION=NO
+
+Graphium current relevant authorities:
+  graphium/application/commands.py
+  graphium/application/view_settings.py
+  graphium/infrastructure/view_settings_store.py
+  graphium/adapters/gtk/window.py
+  graphium/adapters/gtk/dialogs.py
+  graphium/adapters/gtk/editor_view.py
+  tests/behavioral/test_preferences.py
+  tests/behavioral/test_commands.py
+  tests/desktop/scenarios/preferences.py
+  docs/user/GRAPHIUM_USER_GUIDE.txt
+  docs/user/GRAPHIUM_KEYBOARD_SHORTCUTS.txt
+
+CURRENT GRAPHIIUM BEHAVIOR
+--------------------------
+Edit -> Preferences… opens a modal dialog containing exactly:
+  - Tab width: integer 1..32, default 8
+  - Insert spaces instead of tabs: boolean, default false
+
+The semantic settings authority is already correct and small:
+  ViewSettings.tab_width
+  ViewSettings.insert_spaces
+  JsonViewSettingsStore persists the same two keys atomically in view.json.
+  GraphiumTextView applies the width to Pango tab stops.
+  Insert-spaces changes only future plain Tab key behavior and uses the configured
+  logical next tab stop.
+
+The problem is therefore UI topology, not a missing settings model.
+
+MATURE SOURCE CORPUS INSPECTED DIRECTLY
+---------------------------------------
+Mousepad 0.7.0
+  archive sha256 e86c59feb08126d4cace368432c16b2dee8e519aaca8a9d2b409ae1cdd200802
+  relevant direct source:
+    mousepad/resources/gtk/menus.ui
+    mousepad/mousepad-window.c
+    mousepad/mousepad-dialogs.c
+    mousepad/resources/ui/mousepad-prefs-dialog.ui
+    mousepad/mousepad-prefs-dialog.c
+    mousepad/mousepad-view.c
+  finding:
+    Document -> Tab Size exposes 2, 3, 4, 8, Other… plus Insert Spaces.
+    Other… uses a narrow 1..32 selector.
+    Mousepad ALSO duplicates tab width / tab mode inside its much larger Preferences dialog.
+
+Leafpad
+  archive sha256 78bae120104965d841097ba438aa02b92efa349f2e9989b5026c1e36dd6b3b6e
+  relevant direct source:
+    src/view.c
+    src/indent.c
+    src/main.c
+    README
+  finding:
+    no Preferences dialog; Ctrl+Tab directly toggles tab width, historically between the
+    configured default and 4/8 behavior. Tab-width control is treated as an immediate editor
+    operation, not a reason to create a preferences surface.
+
+L3afpad
+  archive sha256 0bc6cbb96fbf37eaf961a73d2a2c5fbcd9682a4d5bf2d7112eb1bfed0b04fdb6
+  relevant direct source:
+    src/view.c
+    src/indent.c
+    src/main.c
+    README
+  finding:
+    follows the same lightweight direct-control lineage as Leafpad while persisting its
+    configured tab width; no general Preferences dialog is required for this setting.
+
+FeatherPad
+  archive sha256 1651a43c8541d6921f6ece30a82bcb38e1341fbee2e17be9081468fe6ea548ac
+  relevant direct source:
+    featherpad/prefDialog.ui
+    featherpad/pref.cpp
+    featherpad/config.cpp
+    featherpad/config.h
+  finding:
+    text tab size lives in a broad Preferences surface containing many unrelated settings.
+    This supports Preferences only when the application actually has a substantial settings
+    surface; it does not justify Graphium's two-control dialog.
+
+GNOME Text Editor
+  archive sha256 b7e1c075e40929765dfebb68297d9100eb4fb3b7fe71cec53d070cfc451c5555
+  relevant direct source:
+    src/editor-preferences-dialog.ui
+    src/editor-page-settings.c
+    src/editor-page.c
+    src/editor-window-actions.c
+  finding:
+    Spaces Per Tab is one member of a broad indentation/settings system together with
+    auto-indentation, indentation character, indent width, discovery/modeline/editorconfig,
+    behavior and other preferences. Again: rich Preferences is justified by breadth.
+
+gedit (supplied mature snapshot)
+  archive sha256 957142746934474b84457b6fb171fb1ffcc0942facf7131f9c3c6f492247737d
+  relevant direct source:
+    gedit/gedit-window.c
+    gedit/gedit-preferences-dialog.ui
+    gedit/gedit-preferences-dialog.c
+  finding:
+    exposes tab width and spaces directly through an active-view status control while also
+    retaining them in a much broader Preferences dialog. Direct access is mature behavior;
+    duplication is acceptable there because Preferences has independent breadth.
+
+CONFIRMATION-BIAS COUNTERMEASURE
+--------------------------------
+Graphium assumption under test:
+  remove Preferences and expose tab controls directly.
+
+Contradictory/stressing mature evidence:
+  Mousepad and gedit duplicate direct tab controls in Preferences; GNOME Text Editor and
+  FeatherPad keep tab size in Preferences. Therefore "mature editors put tab width directly
+  in a menu" is NOT a universal rule.
+
+Materially different mature model:
+  rich editors justify Preferences because it is an aggregate surface for many setting
+  families. Lightweight Leafpad/L3afpad demonstrate that tab-width control alone does not
+  require such a surface.
+
+Decision change caused by the contradictory evidence:
+  Graphium must NOT copy Mousepad's duplication. The rationale for deleting Preferences is
+  specifically Graphium's tiny two-setting surface and existing one-owner/direct-command
+  policy, not an assertion that Preferences is generally bad.
+
+ADOPT / ADAPT / REJECT / DEFER
+------------------------------
+ADOPT:
+  - direct access to Tab Width;
+  - direct checked access to Insert Spaces Instead of Tabs;
+  - persistent settings across restart;
+  - 1..32 custom tab-width capability;
+  - narrow Other… selector rather than a generic Preferences dialog;
+  - Cancel is state-neutral;
+  - settings persistence failure does not publish a new UI/action state.
+
+ADAPT:
+  - Mousepad fixed choices 2/3/4/8 + Other…;
+  - keep Graphium's existing ViewSettings/JsonViewSettingsStore authority;
+  - place the two direct controls in Edit, matching the already approved Graphium surface,
+    rather than copying Mousepad's Document topology. Graphium Document is currently reserved
+    for representation/document inspection operations (Encoding, Line Endings, Check Spelling,
+    Statistics), while these tab controls are persistent editor-input behavior.
+
+REJECT:
+  - retaining Edit -> Preferences… after direct controls exist;
+  - duplicating the same two settings in both direct commands and Preferences;
+  - moving tab width into document metadata or making it per-document;
+  - adding GtkSourceView, GSettings, EditorConfig, modelines, plugin/config frameworks;
+  - a 1..32 menu with 32 visible choices;
+  - removing current custom-width capability;
+  - adding a Tab Width keyboard shortcut in this slice;
+  - changing existing document text when only display width changes;
+  - rewriting existing literal tabs when Insert Spaces is toggled.
+
+DEFER:
+  - any future general Preferences surface. It may return only if Graphium later has enough
+    independently justified settings that a consolidated preferences UI reduces rather than
+    increases complexity. No such surface is justified now.
+
+FROZEN G15-S2 USER SURFACE
+--------------------------
+Edit
+  ...existing edit commands...
+  Tab Width ->
+    2
+    3
+    4
+    8
+    Other…
+  Insert Spaces Instead of Tabs   [checked state]
+  Transform Text -> ...
+
+Exact ordering within Edit should preserve conventional edit commands first and keep the two
+settings adjacent. Preferences… disappears completely.
+
+FROZEN SEMANTICS
+----------------
+TAB WIDTH
+  - default remains 8;
+  - valid persisted domain remains integer 1..32;
+  - choosing 2/3/4/8 persists immediately, then updates the active text view;
+  - Other… opens only a tab-width numeric chooser, initialized from current width;
+  - cancelling Other… changes nothing;
+  - custom values remain persisted and applied on restart;
+  - a custom current value maps the menu state to Other…;
+  - changing width changes visual/logical tab-stop behavior only; no document edit, no dirty
+    transition, no history entry, no file mutation.
+
+INSERT SPACES INSTEAD OF TABS
+  - default remains false;
+  - direct boolean menu action;
+  - toggle persists immediately, then updates the active text view;
+  - toggling alone does not edit the document, dirty it, or create history;
+  - when enabled, a later plain Tab key inserts spaces to the next logical configured tab stop;
+  - modified Tab combinations remain unrepurposed, preserving current behavior.
+
+PERSISTENCE / AUTHORITY
+  - ViewSettings remains sole semantic owner;
+  - JsonViewSettingsStore remains sole persistence owner for these settings;
+  - existing key names tab_width and insert_spaces remain unchanged;
+  - no config migration and no compatibility reader is added;
+  - failure to save keeps the previous in-memory authority, action state and TextView behavior.
+
+LIGHTWEIGHT / NET-REDUCTIVE BUDGET
+---------------------------------
+Current dedicated generic Preferences UI/code includes at least:
+  choose_preferences()              45 lines
+  _commit_preferences()             12 lines
+  _action_preferences()             10 lines
+plus command/import/tests/docs dedicated to the generic surface.
+
+G15-S2 must delete that generic surface rather than wrap or retain it.
+One narrow choose_tab_width() helper is permitted only for Other… and must own no persistence.
+The existing generic command-choice machinery and boolean-action machinery should be reused.
+No new runtime module, dependency, thread, subprocess, store, cache or framework is permitted.
+
+PERMANENT TEST CONTRACT BEFORE IMPLEMENTATION
+---------------------------------------------
+Focused static/headless tests must prove:
+  1. COMMANDS has no preferences action;
+  2. exactly one Tab Width action exists in Edit with choices 2/3/4/8/Other…;
+  3. exactly one Insert Spaces Instead of Tabs boolean action exists in Edit;
+  4. no choose_preferences/_action_preferences/_commit_preferences survives;
+  5. config schema/key names remain tab_width and insert_spaces;
+  6. default remains 8 / false and range remains 1..32;
+  7. fixed-width action persistence failure leaves state/view unchanged;
+  8. custom Other cancel is state-neutral;
+  9. custom width accept persists/applies exactly once;
+ 10. custom current width maps UI state to Other…;
+ 11. insert-spaces persistence failure leaves state/view unchanged;
+ 12. toggling either setting alone does not alter text/history/dirty state;
+ 13. existing Tab insertion math and one-Undo-unit behavior remain unchanged;
+ 14. restart/reload preserves settings using the existing JSON authority;
+ 15. Help/User Guide no longer references Edit -> Preferences…;
+ 16. full behavioral/integration/release regression remains PASS.
+
+True-GTK, only after local qualification and only if still indispensable, should prove:
+  - Preferences item absent;
+  - Tab Width submenu radio state for fixed and custom values;
+  - Other… dialog is lazy and Cancel-neutral;
+  - Insert Spaces check state follows persisted authority;
+  - no document-state mutation from changing the settings themselves.
+
+CONTRACT STATUS
+---------------
+G15_S2_SOURCE_FIRST_MATURE_AUDIT=PASS
+G15_S2_CONTRACT=FROZEN
+G15_S2_SCOPE=TAB_CONTROLS_SIMPLIFICATION
+G15_S2_EXPECTED_STRUCTURAL_DIRECTION=NET_REDUCTIVE
+G15_S2_NEW_PERSISTENCE_AUTHORITY=NO
+G15_S2_CONFIG_MIGRATION=NO
+G15_S2_NEW_DEPENDENCY=NO
+G15_S2_NEW_RUNTIME_MODULE=NO
+G15_S2_T480_REQUIRED_FOR_AUDIT=NO
+G15_S2_IMPLEMENTATION_STARTED=NO
+CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO

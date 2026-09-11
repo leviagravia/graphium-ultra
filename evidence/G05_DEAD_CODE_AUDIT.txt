@@ -1,0 +1,61 @@
+GRAPHIUM G05 DEAD CODE / AUTHORITY DUPLICATION AUDIT
+Date: 2026-08-14
+Baseline: published G04 commit 283f1aa5352c2403ac9e0a945b87cc82cd08cff0
+Scope: G05 Search Menu Core implementation before desktop candidate freeze
+
+METHOD
+- Static reference scan across graphium/, tools/, tests/ for all G05 public/new authorities.
+- AST import-use scan over Python source.
+- Search for duplicate controller/composition/programmatic-edit authorities.
+- Search for rejected/background search infrastructure and stale snapshot transaction routing.
+- Full unittest/strict verifier required separately after this audit.
+
+RESULTS
+1. SearchController
+   - definition count: 1
+   - composition instance count: 1
+   - used by GTK window through CoreComposition.search, tests and performance gate.
+
+2. Search domain
+   - find_next/find_previous are directly used by SearchController/tests/performance.
+   - find_all is restricted to Replace All planning/tests; navigation does not route through it.
+   - is_exact_match is used by Replace One acquisition semantics.
+   - SearchMatch/SearchResult are active value objects, not orphaned abstractions.
+
+3. Programmatic edit authority
+   - apply_prevalidated_programmatic_group definition count: 1.
+   - active product caller: GTK replacement-plan projection.
+   - existing GtkTextBufferPort.apply_operations is reused; no duplicate buffer writer was added.
+   - legacy graphium/application/editor_transaction.py remains G02 historical regression authority and is NOT called by G05 replacement.
+
+4. Safety/performance authorities
+   - DEFAULT_MAX_HISTORY_PAYLOAD_CHARS has one domain constant and is reused by DeltaHistory/Search preflight.
+   - MAX_REPLACE_ALL_MATCHES has one G05 application constant.
+   - G04 ensure_interactive_text_renderable remains the final-text renderer authority.
+   - no renderer guard bypass switch exists.
+
+5. Search UI/state
+   - one lazy Gtk.SearchBar surface.
+   - no persistent search DB/history, background worker/thread, index or highlight-all subsystem.
+   - no top-level Gtk.SearchBar.handle_event forwarding/type-to-search path.
+   - Gtk.SearchBar native close affordance and connect_entry() are active.
+
+6. Import/use audit
+   - removed one G05-only unused import (ViewState in g05_true_gtk_gate.py).
+   - other AST-reported candidates are pre-existing export/test/source items outside the G05 delta and are not removed as part of G05 scope.
+
+7. Rejected pre-candidate designs are absent from active source
+   - no whole-document Unicode boundary-map cache;
+   - no Find navigation through a complete occurrence list;
+   - no full-snapshot G05 edit transaction;
+   - no timer/background search authority.
+
+DECISION
+ADOPT current G05 authority layout.
+REJECT creation of additional search service, cache, scanner, history DB or replacement writer.
+RETAIN G02 editor_transaction.py only as historical regression code; it is not active G05 composition.
+
+G05_DEAD_CODE_AUDIT=PASS
+G05_DUPLICATE_AUTHORITY_AUDIT=PASS
+G05_REJECTED_SEARCH_INFRASTRUCTURE_PRESENT=NO
+USER_REPO_GIT_MUTATION=NO

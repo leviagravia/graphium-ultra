@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Graphium
+GenericName=Text Editor
+Comment=Fast, simple and safe plain-text editor
+Exec=graphium %F
+Icon=io.github.leviagravia.Graphium
+Terminal=false
+MimeType=text/plain;
+Categories=GTK;Utility;TextEditor;
+Keywords=Text;Editor;Plaintext;
+StartupNotify=true

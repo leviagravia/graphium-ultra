@@ -1,0 +1,70 @@
+Graphium G04 — Scope and Build Receipt
+Date: 2026-08-14
+Baseline commit: e7045e0ce1c79da71c9968bdfa052df25a5378b7
+Baseline tree: 42fe5340e1181199db86ed69cfa93b4735e45666
+
+Work item:
+  G04 — Native Edit Integration Hardening + Thin GTK Shell + File Lifecycle +
+  Scientific Performance Baseline
+
+Current status:
+  OPEN / CONTRACT FROZEN / VALID MANUAL PRODUCT FAIL RECORDED /
+  HUGE-LINE MATURE-SOURCE REAUDITED / REPAIR NONDESKTOP VALIDATED /
+  DESKTOP REQUALIFICATION READY
+
+Previously demonstrated on real T480 before the manual product failure:
+  tests=184/184 PASS
+  strict gates=PASS
+  GTK 3.24.41
+  True-GTK shell/lifecycle/native-delta/savepoint/topology/help=PASS
+  Cinnamon shortcut audit=PASS
+  Graphium FIRST_EDITABLE absolute admission=PASS
+  common FIRST_VISIBLE comparator admission=PASS
+  comparators=Leafpad,L3afpad,Mousepad,FeatherPad
+  manual group 1=PASS
+
+Valid product failure:
+  failed candidate tree=caa1dc06f3e937a14ceb1499bbe3a9f73d1b6260
+  manual operation=one-mib.txt / Ctrl+End / insert Z
+  observation=initial response and Undo availability, then window hang
+  exact fixture=1,048,576 characters on one logical line
+  classification=VALID MANUAL PRODUCT FAIL / INTERACTIVE RESPONSIVENESS
+  candidate status=WITHDRAWN
+
+Failure-specific redesign / repair:
+  realistic large multiline documents remain normal editable documents;
+  pathological logical-line width is treated as a separate renderer-safety axis;
+  G04 interactive Gtk.TextView line budget=20,000 Unicode characters;
+  over-budget Open is refused before GtkTextBuffer/session/history replacement;
+  source/current document is never truncated, wrapped, normalized or rewritten;
+  insertion/paste and newline-deleting joins are guarded before GTK default mutation;
+  blocked edit does not advance history/savepoint and gives explicit warning;
+  True-GTK now exercises real end scrolling on a realistic ~1 MiB multiline document;
+  True-GTK separately proves pathological-line Open and insertion refusal.
+
+Validated non-desktop repair gates:
+  tests=195/195 PASS
+  strict gates=PASS
+  canonical documents=3/3
+  active GTK history storage=delta
+  semantic undo timer=absent
+  one-process/one-window/one-document NON_UNIQUE topology=source-gated
+  Gtk.TextView=yes
+  GtkSourceView=no
+  toolbar=no
+  Help=lazy offline User Guide / Keyboard Shortcuts / About
+  content-neutral Open/Save=yes
+  sole physical writer=GuardedFileWriter
+  renderability policy=PASS
+  pathological-line guard source gate=PASS
+
+Desktop requalification still required on T480:
+  repaired True-GTK renderer-safety + large-multiline gate
+  NON_UNIQUE topology gate
+  active Linux Mint/Cinnamon shortcut audit
+  exact Graphium FIRST_EDITABLE baseline
+  common FIRST_VISIBLE comparator baseline
+  final human desktop validation with realistic multiline large-file fixture
+
+Git mutation by build process: NO
+G05 started: NO

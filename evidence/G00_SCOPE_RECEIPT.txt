@@ -1,0 +1,19 @@
+GRAPHIUM G00 — SCOPE RECEIPT — NON-CANONICAL EVIDENCE
+
+G00 includes:
+- product identity
+- technology freeze
+- package/layer bootstrap
+- XDG isolation
+- single-document/single-writer authority contract
+- W116 selective-extraction policy
+- canonical-document cap enforcement
+- serial roadmap
+- architecture/headless tests
+
+G00 excludes:
+- imported Calamus feature code
+- GTK product shell
+- desktop candidate/attempt
+- repository creation on the user's T480
+- Git stage/commit/push

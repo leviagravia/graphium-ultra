@@ -1,0 +1,38 @@
+GRAPHIUM G05 SEARCH SCALE HARDENING RECEIPT
+Date: 2026-08-14
+Status: PRE-DESKTOP ENGINEERING EVIDENCE; NOT T480 CERTIFICATION
+
+DEFECT CLASS FOUND BEFORE CANDIDATE
+1. Document-wide Unicode boundary mapping could amplify a 10 MiB search command to about
+   6.8 seconds and about 130 MiB of temporary allocation when a length-changing casefold
+   character was present.
+2. Find Next/Previous initially materialized find_all(), allowing frequent queries to
+   allocate a SearchMatch object for every occurrence.
+
+REJECTED DESIGN
+- whole-document casefold/boundary map;
+- navigation by complete occurrence-list materialization.
+
+ADOPTED DESIGN
+- query/replacement remain single-line;
+- full Unicode casefold correctness retained;
+- transformed/source boundary mapping is logical-line bounded under G04 renderability;
+- Find Next/Previous locate only the requested occurrence;
+- Replace All alone freezes matches and is capped at 50,000;
+- independent DeltaHistory payload cap remains fail-closed before mutation.
+
+LOCAL POST-REPAIR MEASUREMENTS (container engineering host, not T480):
+- 10 MiB case-sensitive Find Next to near EOF: about 6 ms in initial spot measurement;
+- 10 MiB case-insensitive Find Next: about 250 ms in initial spot measurement;
+- same 10 MiB fixture with one ß length-changing fold: about 250 ms;
+- dedicated g05_search_performance.py subsequently measured median roughly 116-118 ms
+  for 10 MiB case-insensitive workloads on this host and under 60 ms for 10 MiB moderate
+  Replace All; exact T480 values remain pending.
+
+AUTHORITY MARKERS
+G05_CASEFOLD_WORKING_SET=LOGICAL_LINE_BOUNDED
+G05_FIND_NAVIGATION_MATERIALIZES_ALL_MATCHES=NO
+G05_REPLACE_ALL_MATCH_CAP=50000
+G05_REPLACE_ALL_MATCH_CAP_FAILURE=PRE_MUTATION_FAIL_CLOSED
+G05_SEARCH_SCALE_HARDENING=PASS_PRE_DESKTOP
+G05_DESKTOP_PERFORMANCE_CERTIFICATION=PENDING_T480

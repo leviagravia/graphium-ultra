@@ -1,0 +1,107 @@
+GRAPHIUM G08 — INCREMENTAL PAGINATION RESPONSIVENESS REPAIR
+Date: 2026-08-19
+Status: IMPLEMENTED IN ISOLATED COPY / NON-CANDIDATE / T480 REQUALIFICATION PENDING
+Candidate attempts consumed: 0/2
+Canonical Git mutation: NO
+
+1. FAILURE-SPECIFIC T480 EVIDENCE
+
+Exact pre-repair async source tree:
+  d2d6c498e52d4fea0fe0036d1a2666977d9ce2a5
+
+The real-mainloop diagnostic established the following sequence on GTK 3.24.41:
+  G08_REAL_MAINLOOP_PHASE=PREVIEW_1M_CALL_RETURN elapsed_ms=6.756 busy=1
+  heartbeat tick=1 at ~50 ms
+  heartbeat tick=5 at ~254 ms
+  heartbeat tick=10 at ~508 ms
+  G08_RENDER_PHASE=BEGIN_PRINT_ENTER
+  containment then expired before BEGIN_PRINT_EXIT or any draw-page marker.
+
+Classification:
+  VALID NON-CANDIDATE PRODUCT RESPONSIVENESS FAIL in eager begin-print pagination.
+  GtkPrintOperation allow_async is effective at the operation-entry boundary, but the Graphium
+  begin-print callback monopolizes the GTK main thread while globally laying out/paginating 1 MiB.
+  This is not a candidate FAIL and consumes no candidate attempt.
+
+2. EXACT GRAPHIIUM SOURCE CAUSE
+
+Pre-repair graphium/adapters/gtk/printing.py _PrintJob.begin_print did all document-size work in one
+GTK callback:
+  - create one Pango.Layout for the complete snapshot;
+  - set complete document text on that layout;
+  - force layout.get_line_count();
+  - traverse every visual line via get_line_readonly()/get_extents();
+  - derive every page boundary;
+  - only then call set_n_pages() and return.
+
+The observed heartbeat->BEGIN_PRINT_ENTER->containment sequence matches this ownership boundary.
+No evidence supports an O(N^2) re-pagination bug; the failure is eager document-global work in one
+main-loop callback.
+
+3. DIRECT MATURE-SOURCE REAUDIT
+
+Preserved source corpus only; no web substitute.
+
+GEDit — gedit/gedit-print-job.c
+  begin_print_cb creates/configures the compositor and returns.
+  paginate_cb calls gtk_source_print_compositor_paginate(); it returns gboolean finished and sets
+  n_pages only when pagination is complete.
+  GtkPrintOperation has allow_async TRUE and owns paginate + done signal lifecycle.
+  Disposition: ADAPT the incremental paginate ownership, not GtkSourceView/compositor dependency.
+
+GNOME Text Editor — src/editor-print-operation.c
+  editor_print_operation_paginate() delegates incremental work to
+  gtk_source_print_compositor_paginate(), sets n_pages only on completion, and is connected to the
+  GtkPrintOperation paginate signal. The operation property allow-async is TRUE.
+  Disposition: ADAPT the GTK paginate lifecycle only; GtkSourceView remains forbidden in Graphium.
+
+Mousepad 0.7.0 remains a contrast oracle: allow_async alone is not sufficient to falsify a blocking
+begin-print implementation, because its printing path can still own eager pagination work.
+
+4. REPAIR CONTRACT
+
+Graphium retains:
+  - native GtkPrintOperation Preview and Print dialog;
+  - allow_async TRUE + one in-flight operation/job + done ownership;
+  - Pango/Cairo rendering;
+  - exact live PrintSnapshot;
+  - page breaks only between complete measured Pango visual lines;
+  - no GtkSourceView/GtkSourcePrintCompositor dependency;
+  - no worker/thread/timer/queue/progress service/custom preview;
+  - strict startup-lazy print-module and Page Setup boundary.
+
+Graphium changes only pagination ownership:
+  - begin-print becomes document-size-independent state/geometry initialization;
+  - GtkPrintOperation paginate signal is connected;
+  - each paginate callback measures at most one bounded Pango layout chunk;
+  - chunk target = 16 KiB and maximum 64 logical source lines;
+  - chunk boundaries occur only at logical-line boundaries, never inside a source logical line;
+  - the existing G04 20,000-character logical-line renderability gate bounds the one-line fallback;
+  - non-final chunks ending in newline suppress only Pango's artificial terminal empty visual line,
+    preventing a blank line from being manufactured at chunk boundaries;
+  - measured chunk layouts are retained only for the operation lifetime;
+  - an incremental GTK-free paginator joins visual-line spans across chunk boundaries and commits
+    pages only between complete measured visual lines;
+  - set_n_pages() is published only after pagination completes;
+  - draw-page renders retained Pango visual lines; it does not re-layout the whole document.
+
+5. FALSIFICATION / NEXT GATE
+
+Local non-GI proof can establish only architecture, topology and GTK-free pagination state behavior.
+The exact repaired source must be requalified on the T480 as NON-CANDIDATE.
+
+Required failure-specific T480 proof before broader predesktop gates:
+  - exact source tree and strict suite PASS;
+  - begin-print ENTER/EXIT must complete without main-loop starvation;
+  - paginate must be observed across multiple callbacks for a 1 MiB snapshot;
+  - a pre-armed GLib heartbeat must continue between paginate callbacks;
+  - cancel during pagination must be deliverable and must clear in-flight ownership through GTK done;
+  - a small native Preview must remain correct;
+  - 1 MiB Preview must remain document-neutral;
+  - no candidate attempt and no canonical Git mutation.
+
+MATURE_REAUDIT=PASS
+CONFIRMATION_BIAS_COUNTERMEASURE=PASS
+G08_EAGER_BEGIN_PRINT=RETIRED_VALID_NONCANDIDATE_PRODUCT_RESPONSIVENESS_FAIL
+G08_INCREMENTAL_PAGINATION_REPAIR=IMPLEMENTED_NONCANDIDATE
+G08_INCREMENTAL_PAGINATION_T480_REQUALIFICATION=PENDING

@@ -1,0 +1,46 @@
+GRAPHIUM G06 — LINE NUMBERS NON-CANDIDATE PROBE RECEIPT
+Date: 2026-08-15
+Machine: ThinkPad T480 / Linux Mint 22.3 / GTK 3.24.41
+
+R1
+--
+Classification: PRE_PRODUCT_PROBE_HARNESS_IMPORT_DEFECT
+Cause: unused Gdk namespace was imported without version pinning; Gdk 4.0 was loaded
+before Gtk 3.0 required Gdk 3.0.
+PRODUCT_FAIL=NO
+LINE_NUMBERS_VERDICT=NOT_REACHED
+CANDIDATE_ATTEMPT_CONSUMED=NO
+
+R2 REPAIR
+---------
+Removed unused Gdk and PangoCairo namespaces; pinned Gtk 3.0/Pango 1.0; used
+Gtk.render_layout; added GI namespace smoke preflight.
+
+R2 T480 RESULTS
+---------------
+1 MiB wrap OFF: lines=12559, gutter-on median=16.586 ms, p90=17.399 ms,
+delta median=+1.476 ms, max visible logical lines/draw=40, buffer mutations=0.
+1 MiB wrap ON: lines=12559, gutter-on median=16.593 ms, p90=16.923 ms,
+delta median=-0.157 ms, max visible logical lines/draw=32, buffer mutations=0.
+10 MiB wrap OFF: lines=125580, gutter-on median=15.162 ms, p90=16.790 ms,
+delta median=-0.640 ms, max visible logical lines/draw=40, buffer mutations=0.
+Manual visual: PASS for alignment, scrolling, one number per logical line under wrap,
+toggle, Ctrl+End/PageUp/PageDown/scrollbar and resize with wrap.
+
+G06_GUTTER_VISIBLE_ONLY=PASS
+G06_GUTTER_CONTENT_NEUTRAL=PASS
+G06_LINE_NUMBERS_MANUAL=PASS
+G06_LINE_NUMBERS_NONCANDIDATE_PROBE=PASS
+FINAL_PHASE=G06_LINE_NUMBERS_NONCANDIDATE_PROBE_PASS
+PROBE_RC=0
+PRODUCT_CANDIDATE=NO
+GIT_MUTATION=NO
+
+DECISION
+--------
+G06_LINE_NUMBERS=ADOPT
+MODEL=GTK_TEXTVIEW_NATIVE_LEFT_BORDER_WINDOW
+DRAW_SCOPE=VISIBLE_LOGICAL_LINES_ONLY
+WRAPPED_CONTINUATION_NUMBERS=NO
+GTKSOURCEVIEW=NO
+BACKGROUND_LINE_INDEX=NO

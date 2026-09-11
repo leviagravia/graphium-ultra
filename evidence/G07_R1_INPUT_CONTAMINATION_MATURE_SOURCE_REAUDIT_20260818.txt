@@ -1,0 +1,57 @@
+GRAPHIUM G07 R1 INPUT-CONTAMINATION FAILURE RE-AUDIT — 2026-08-18
+
+SCOPE
+Failure-specific direct source audit only. No Internet research.
+
+OBSERVED CANDIDATE R1 STOP
+- G06 View performance, wrap-10m measured worker 4
+- failure boundary: fixture pre-open
+- state: worker crossed into Modified lifecycle state before opening the 10 MiB fixture
+- user reported typing in another editor on the same X11/Cinnamon desktop during the run
+- product verdict suspended pending diagnostics
+
+DIRECT MATURE-SOURCE FINDINGS
+1. Leafpad
+   src/main.c: gtk_widget_show_all(pub->mw->window) before gtk_main().
+   A normal editor window is shown on the user desktop and is keyboard-reachable.
+
+2. L3afpad
+   src/main.c: gtk_widget_show_all(pub->mw->window) before gtk_main().
+   Same direct desktop exposure model as Leafpad.
+
+3. Mousepad 0.7.0
+   mousepad/mousepad-application.c: gtk_window_present(GTK_WINDOW(window)).
+   mousepad/mousepad-document.c: gtk_widget_grab_focus(GTK_WIDGET(document->textview)).
+   Window presentation and editor focus are normal product behavior.
+
+4. gedit
+   gedit/gedit-window.c: gtk_window_present(GTK_WINDOW(window)).
+   gedit/gedit-tab.c and gedit-commands-file.c: gtk_widget_grab_focus() on the editing view.
+
+5. GNOME Text Editor
+   src/editor-session.c: gtk_window_present(GTK_WINDOW(window)); editor_page_grab_focus(page).
+   src/editor-page.c: editor_page_grab_focus() delegates to gtk_widget_grab_focus(self->view).
+
+6. FeatherPad
+   featherpad/singleton.cpp: fp->show().
+   Normal editor windows are exposed to desktop focus/input.
+
+DIAGNOSTIC EVIDENCE
+- Lifecycle diagnostic: 30/30 published G06 + 30/30 G07 repair fresh-process 10 MiB opens CLEAN.
+- Input diagnostic R1: first 29 completed workers CLEAN; stopped only because outer 300 s timeout was inconsistent with 30 x 20 s worker allowance.
+- Input diagnostic R2: 30/30 fresh workers CLEAN; focus_exposure=YES 30/30; key/button/insert/user-action events 0/30; classification NO_MUTATION_REPRODUCED.
+
+CLASSIFICATION
+The Candidate R1 stop is not reproducible as a spontaneous Graphium pre-open mutation. The desktop is demonstrably focus-exposed. The prior execution is classified INVALID / DESKTOP INPUT CONTAMINATION PLAUSIBLE / PRODUCT_VERDICT_NOT_REACHED, not a valid product FAIL.
+
+HARNESS REISSUE CONTRACT
+- Product focus/presentation behavior MUST NOT be changed.
+- G06 View performance workers attach key/button tripwires immediately after synchronous activation and before the historical 100 ms pre-open drain.
+- No typed text is logged.
+- Any captured key/button event invalidates the desktop execution with dedicated exit code 3 and PRODUCT_VERDICT=NOT_REACHED.
+- A clean lifecycle mutation without captured input remains a product/harness failure and must be re-audited; it is not masked.
+- No retry or sample discard is allowed after contamination.
+- Successful View performance requires the contamination tripwire PASS marker.
+
+PRODUCT_RUNTIME_MUTATION=NO
+GIT_MUTATION=NO_USER_REPO

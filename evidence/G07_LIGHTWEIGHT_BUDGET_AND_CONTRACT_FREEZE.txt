@@ -1,0 +1,281 @@
+GRAPHIUM G07 — LIGHTWEIGHT BUDGET + CONTRACT FREEZE
+Date: 2026-08-16
+Baseline: G06 published commit aae14ef000ea44674cb9bbb7b3a87e3af00c0b18
+
+G07_CONTRACT=FROZEN
+G07_IMPLEMENTATION=NOT_STARTED
+
+===============================================================================
+1. LIGHTWEIGHT BUDGET
+===============================================================================
+
+QUICK-EDIT VALUE: PASS
+  Recent removes repeated chooser navigation.
+  Copy/Version Copy add explicit low-friction safety without changing the active file.
+  Properties makes strong identity/representation visible.
+  Statistics supplies counts only when requested.
+
+MENTAL-MODEL COST: PASS
+  All new behavior is explicit and conventional.
+  Recent is history, never restoration.
+  Copy is not Save As.
+  Version Copy is a deterministic copy, not a version manager.
+  Properties observes; Check Now does not reload/accept.
+  Statistics observes current text; it does not remain live.
+
+PERSISTENT/BACKGROUND COST: PASS
+  One tiny recent-files XDG-state JSON, max 10 logical paths.
+  No DB, session file set, worker, timer, scanner, monitor or index.
+
+STARTUP PATH: PASS BY CONTRACT
+  Recent store is lazy; no file read is required to create the initial editor window.
+  Strong disk observer is invoked only by Open/Check Now and later G11, never idle/startup.
+  Statistics module has no startup scan and no buffer signal subscription.
+
+ARCHITECTURE COST: PASS
+  document_authority_count remains 1.
+  physical_writer_authority_count remains 1.
+  Existing lifecycle remains the only Open/replacement lane.
+  Existing GuardedFileWriter remains the only write authority.
+
+DUPLICATION / STORAGE / MAINTENANCE: PASS
+  Recent contains paths only and is capped.
+  Version files are created only by explicit user action; no hidden retention or cleanup.
+  The new read-only strong observer is shared by loader/Properties and is G11-ready, avoiding a
+  second weaker observation implementation.
+
+===============================================================================
+2. FROZEN COMMAND SURFACE
+===============================================================================
+
+File:
+  New
+  Open…
+  Open Recent >
+  Save
+  Save As…
+  Save a Copy…
+  Save Version Copy…
+  Properties…
+  Quit
+
+Document:
+  Statistics…
+
+Edit/Search/View/Help retain their G06 command sets.
+No G08/G10/G11 placeholder commands are inserted early.
+No new G07 default keyboard accelerators.
+
+Open Recent submenu:
+  up to 10 MRU paths
+  Clear Recent
+  no session/cursor/encoding metadata
+
+===============================================================================
+3. RECENT FILE HISTORY CONTRACT
+===============================================================================
+
+Storage:
+  XDG state path: <XDG_STATE_HOME>/graphium/recent-files.json
+  JSON schema: {"version": 1, "paths": ["/absolute/logical/path", ...]}
+  file mode 0600; atomic replace; no DB.
+  Lazy load. Corrupt/missing data => empty history without startup mutation.
+
+Identity:
+  Store normalize_logical_path() output only.
+  Deduplicate by exact normalized logical path string.
+  Never canonicalize/deduplicate by inode merely to populate the menu.
+
+MRU mutation events:
+  ADOPT:
+    successful Open after the new document is actually installed;
+    successful Save As / first Save when it establishes a new active logical binding.
+  REJECT:
+    failed/cancelled Open;
+    ordinary Save on the same binding;
+    Save a Copy;
+    Save Version Copy;
+    New;
+    Check Now;
+    Statistics.
+
+Failure semantics:
+  Recent persistence failure never rolls back a successful Open/Save As.
+  It is a nonfatal convenience failure and must not mutate document/session truth.
+  Clear Recent is explicit; if persistent clear fails, do not falsely claim durable clear.
+
+Opening:
+  One parameterized GTK action carries selected logical path.
+  It calls the existing FileLifecycleController.open_document(path).
+  No pre-open stat/canonical/encoding shortcut.
+  Failed Open preserves current document exactly under existing lifecycle rules.
+  G07 does not automatically prune stale entries; Clear Recent is the explicit cleanup path.
+
+===============================================================================
+4. SAVE A COPY CONTRACT
+===============================================================================
+
+Action: File -> Save a Copy…
+
+Input:
+  exact current live editor state captured via existing prepare_for_save synchronization.
+  serialization profile = active accepted file representation when named;
+  untitled profile = existing Graphium default UTF-8 / no BOM / LF.
+
+Target:
+  explicit chooser every time.
+  existing target requires frozen observation + user overwrite consent.
+  current active logical path is forbidden as a copy destination even if it disappeared.
+  any existing target resolving to the active physical object is forbidden.
+
+Commit:
+  sole existing GuardedFileWriter observe_target() + commit().
+  late target/parent change => fail closed.
+  mixed EOL => same explicit normalization confirmation as Save because normalized live text
+  cannot reconstruct the original mixed-EOL sequence.
+
+Non-binding invariant after success or failure:
+  active logical path unchanged;
+  active accepted DocumentFileState unchanged;
+  current editor state ID unchanged;
+  saved editor state ID unchanged;
+  Modified/Saved relation unchanged;
+  DeltaHistory/Undo/Redo unchanged;
+  buffer text/selection/cursor unchanged except ordinary chooser/dialog focus behavior;
+  Recent unchanged.
+
+Internal synchronization may refresh session.text/text_editor_state_id for the same current
+editor state, exactly as prepare_for_save already does; this is not a savepoint transition.
+
+===============================================================================
+5. SAVE VERSION COPY CONTRACT
+===============================================================================
+
+Action: File -> Save Version Copy…
+All Save-a-Copy non-binding and writer invariants apply.
+
+Named document target planning:
+  use the ACTIVE LOGICAL directory, not the canonical target directory;
+  basename pattern = <stem>_vNNNN<suffix>;
+  NNNN is at least four decimal digits;
+  choose max(existing matching numeric suffix) + 1; if none, v0001;
+  no 9999 cap; width expands naturally above four digits;
+  inspect only the explicit command's containing directory;
+  unrelated names are ignored;
+  no timestamp naming and no manifest/index.
+
+Race semantics:
+  after planning, observe the exact candidate as EXPECTED_ABSENT;
+  if it appears before commit, fail closed;
+  do not silently skip to another version inside the same transaction;
+  user retry performs a fresh scan and new observation.
+
+Untitled document:
+  explicit destination chooser is required;
+  default suggested name: Untitled_v0001.txt;
+  chosen target remains a non-binding version copy; active document remains Untitled.
+
+===============================================================================
+6. PROPERTIES + CHECK NOW CONTRACT
+===============================================================================
+
+Action: File -> Properties…
+Modal/read-only compact facts view; no editable settings.
+
+Named document accepted facts:
+  logical path
+  resolved/canonical target when different
+  accepted size
+  accepted modification timestamp
+  encoding
+  BOM
+  EOL profile (including Mixed when applicable)
+  Saved / Modified
+  Writable / Read-only
+  hard-link count; explicit warning/fact when nlink > 1
+
+Untitled:
+  Path: Not saved
+  Disk facts: not available
+  representation: default UTF-8 / no BOM / LF
+  Saved/Modified from session state
+  Check Now disabled
+
+Strong observer architecture:
+  create one GTK-free read-only strong observation primitive shared by the G01 loader and
+  Properties. It opens the logical path, checks regular-file type, verifies before/after stat
+  signature, streams/reads content while computing SHA-256, then verifies logical and resolved
+  paths still name the observed object. It MUST NOT reject merely because the file is read-only
+  or nlink > 1; those are facts for Properties. Loader may request captured bytes; Check Now may
+  hash without retaining a second full document copy.
+
+Check Now comparison order:
+  1. missing path => MISSING
+  2. observation cannot be made stably/safely => UNAVAILABLE_OR_UNSTABLE
+  3. canonical/resolved target or dev/inode differs => REPLACED_OR_RETARGETED
+  4. raw SHA-256 differs => CONTENT_CHANGED
+  5. content same but accepted disk observation fields differ => METADATA_CHANGED
+  6. all accepted strong fields equal => UNCHANGED
+
+Check Now NEVER:
+  updates DocumentFileState;
+  changes logical binding;
+  marks Saved;
+  moves savepoint/history;
+  mutates/reloads buffer;
+  enables an otherwise stale ordinary Save;
+  starts a monitor.
+
+Reload remains G11.
+
+===============================================================================
+7. STATISTICS CONTRACT
+===============================================================================
+
+Action: Document -> Statistics…
+
+Execution:
+  capture current GtkTextBuffer text only on activation;
+  calculate in a GTK-free pure function;
+  no live subscription, cache, timeout, worker or background thread;
+  no persistent statistics state.
+
+Counts shown:
+  Document: Lines, Words, Characters
+  Selection: Lines, Words, Characters when selection is non-empty; otherwise “No selection”.
+
+Exact semantics:
+  Characters = len(text) Unicode code points.
+  Words = maximal runs of characters where str.isspace() is false.
+  Lines = 0 for empty text, else count("\\n") + 1.
+  Selection uses the same rules.
+  No byte count: in-memory normalized UTF text is not a truthful proxy for active disk encoding
+  and EOL byte size.
+
+Performance gate frozen for candidate:
+  explicit statistics pure calculation, fresh process:
+    1 MiB median <= 1000 ms
+    10 MiB median <= 1500 ms
+    worker RSS <= 260 MiB
+  These bounds reuse the already accepted order of magnitude of G05 explicit-command linear
+  scanning and are intentionally NOT startup metrics.
+
+===============================================================================
+8. PERMANENT G07 NON-GOALS
+===============================================================================
+
+NO session restoration
+NO tab/workspace/session list
+NO cursor/selection restore in Recent
+NO global history manager dependency
+NO DB / XBEL state authority
+NO automatic backup
+NO version browser/timeline/pruning/retention policy
+NO background index/scanner
+NO file monitor (G11)
+NO Reload (G11)
+NO live word/character counts in status bar
+NO mutable encoding/EOL controls in Properties
+NO second physical writer
+NO second document/session authority
+NO duplicate Preferences surface

@@ -1,0 +1,10 @@
+{
+  "evidence_only": true,
+  "canonical": false,
+  "source_product": "Calamus Standard Edition",
+  "source_work_item": "W116",
+  "source_commit": "33331672f5ba8fcc6a7e1ede9ab849638579f0c7",
+  "source_tree": "db11fee424273c0a383145c132b645c15581b30a",
+  "g00_runtime_feature_files_copied_from_calamus": [],
+  "note": "G00 establishes boundaries before selective code extraction begins in G01+."
+}

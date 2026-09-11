@@ -1,0 +1,46 @@
+GRAPHIUM G07 DESKTOP CERTIFICATION RECEIPT
+Date: 2026-08-18
+
+Baseline published G06:
+  commit=aae14ef000ea44674cb9bbb7b3a87e3af00c0b18
+  tree=c2b372082cf44280f9717045578822e7b92bef12
+
+Certified publication-line source:
+  tree=12f24dbc265247bd9c014e2494fb91fc82f07af1
+  candidate=G07 Desktop Candidate R1 Reissue GDK3
+
+Automated T480 validation:
+  304/304 PASS
+  STRICT_GATES=PASS
+  G04_TRUE_GTK=PASS
+  G05_TRUE_GTK=PASS
+  G06_TRUE_GTK=PASS
+  G07_TRUE_GTK=PASS
+  G06_VIEW_PERFORMANCE_CONTAMINATION_AWARE=PASS
+  G06_LIGHTWEIGHT_BUDGET_GATE=PASS
+  G07_STATISTICS_PERFORMANCE=PASS
+  G04_TOPOLOGY=PASS
+  G06_SHORTCUT_COLLISION_AUDIT=PASS
+  G04_FIRST_EDITABLE=PASS
+  COMMON_FIRST_VISIBLE_COMPARATORS=PASS
+  G05_SEARCH_PERFORMANCE=PASS
+  G06_STARTUP_SELF_REGRESSION=PASS
+  FINAL_PHASE=G07_DESKTOP_CANDIDATE_R1_REISSUE_GDK3_AUTOMATED_PASS_MANUAL_PENDING
+
+Manual desktop validation:
+  frozen_test_count=7
+  user_verdict=TESTS_1_TO_7_ALL_PASS
+  manual_result=7/7_PASS
+
+Attempt accounting:
+  valid_candidate_attempts_consumed=1/2
+  prior invalid/oracle/environment stops are not product FAILs
+
+Runtime freeze:
+  no product runtime changes after certification
+  graphium/bin remain the certified G07 runtime
+
+Publication status at receipt creation:
+  DESKTOP_CERTIFIED=YES
+  PUBLICATION_READY=YES
+  PUBLISHED=NO_UNTIL_FINALIZER_REMOTE_PASS

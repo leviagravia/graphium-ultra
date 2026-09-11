@@ -1,0 +1,47 @@
+Graphium G04 — WITHDRAWN TRANSPORTS / REDESIGN RECEIPT
+Date: 2026-08-14
+
+Transport 1
+  tree=bd1d98911b599d0412bb9aa2352c138a14677403
+  non-desktop=152/152 PASS
+  stop=ModuleNotFoundError in True-GTK helper before Graphium product import
+  classification=INVALID PRE-PRODUCT HARNESS RUN / WITHDRAWN / NOT PRODUCT FAIL
+
+Transport 2
+  tree=ac66a6b67a42f78d0398391d30f44bd973dd476e
+  non-desktop=157/157 PASS
+  True-GTK shell/open-save/savepoint=PASS
+  active Cinnamon shortcut audit=PASS
+  stop=KeyError('monotonic_ns') in performance consumer
+  diagnosis=filesystem ready-record publication race
+  classification=INVALID PERFORMANCE-HARNESS RUN / WITHDRAWN / NOT PRODUCT FAIL
+
+Deep re-audit consequence
+  No numbered retry chain is used. G04 is rebuilt on G03 published baseline.
+  Fixing only KeyError/bootstrap would be insufficient because re-audit invalidated three
+  deeper assumptions: timer-based native history, snapshot cutoff for large files, and
+  unique-instance window hijack topology. Performance comparator methodology was also
+  rebaselined into separate FIRST_VISIBLE and FIRST_EDITABLE metrics.
+
+Transport 3 / seven-editor rebaselined product candidate
+  tree=caa1dc06f3e937a14ceb1499bbe3a9f73d1b6260
+  non-desktop=184/184 PASS
+  True-GTK=PASS
+  NON_UNIQUE topology=PASS
+  Cinnamon shortcut audit=PASS
+  Graphium FIRST_EDITABLE admission=PASS
+  common FIRST_VISIBLE comparator admission=PASS
+  manual group 1=PASS
+  manual failure=one-mib.txt / Ctrl+End / type Z; initially usable with Undo, then window hung
+  exact fixture=one logical line of 1,048,576 characters
+  classification=VALID MANUAL PRODUCT FAIL / WITHDRAWN
+  failure domain=Gtk.TextView/Pango interactive renderability of pathological huge line
+  delta-history failure=NO
+  automated oracle coverage defect=YES (old gate did not exercise visible end navigation)
+
+Failure-specific redesign consequence
+  G04 now separates realistic large multiline documents from pathological logical-line
+  width.  Mature-source re-audit establishes explicit renderer-safety admission as the
+  appropriate pattern while Graphium rejects any content mutation/truncation workaround.
+  The repair covers Open plus prospective insert/paste/delete-join, and the True-GTK oracle
+  now reproduces the real viewport path on a realistic multiline 1 MiB document.

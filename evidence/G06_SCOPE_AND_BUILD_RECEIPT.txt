@@ -1,0 +1,40 @@
+GRAPHIUM G06 — SCOPE / NONDESKTOP BUILD RECEIPT
+Date: 2026-08-15
+Baseline published G05 commit: a9083daf22ab23cf6cd20841be643510e35d700d
+Baseline published G05 tree: 12d55249263e006cc68fa304f3c3cc2a9ef73acb
+
+STATUS
+------
+G06_STATUS=OPEN_CONTRACT_FROZEN_IMPLEMENTATION_AUTHORIZED
+PRODUCT_CANDIDATE=NO
+GIT_MUTATION=NO
+
+FROZEN G06 PRODUCT SCOPE
+------------------------
+ADOPT: Status Bar, Line Numbers, Word Wrap, Font, Zoom In/Out/Reset, Full Screen.
+REJECT_V1: Toolbar.
+DEFER_G10: Appearance.
+DEFER_G07: Statistics/live word-character count.
+
+LINE NUMBERS EVIDENCE
+---------------------
+NON-CANDIDATE T480 R2 probe PASS; native GtkTextView LEFT border window; visible logical
+lines only; no GtkSourceView/index/cache/document mutation.
+
+NONDESSKTOP STATE
+----------------
+Full Python unit suite: 261/261 PASS.
+Five consecutive strict verifier runs: 5/5 PASS.
+New G06 gate bootstraps: PASS from arbitrary cwd.
+Mature-source audit: PASS.
+Dead-code/duplicate-authority audit: PASS.
+Canonical document cap: 3.
+
+REMAINING BEFORE ANY DESKTOP PRODUCT CANDIDATE
+----------------------------------------------
+- fresh source freeze/tree identity;
+- T480 NON-CANDIDATE integrated checkpoint: G04/G05 regressions, G06 True-GTK, G06 View
+  performance, startup FIRST_EDITABLE, common FIRST_VISIBLE comparators, shortcut audit.
+
+G06_LIGHTWEIGHT_BUDGET_GATE=NOT_YET_DESKTOP_QUALIFIED
+G06_DESKTOP_PRODUCT_CANDIDATE=NOT_BUILT

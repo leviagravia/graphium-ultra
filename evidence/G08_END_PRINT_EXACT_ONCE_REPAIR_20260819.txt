@@ -1,0 +1,31 @@
+GRAPHIUM G08 — END-PRINT EXACT-ONCE LIFECYCLE REPAIR
+Date: 2026-08-19
+Status: IMPLEMENTED IN ISOLATED COPY / NON-CANDIDATE
+
+T480 FAILURE EVIDENCE
+- Exact incremental-pagination tree before this repair: 10b1794314e126d06292b7e03ed31fccf12c1040.
+- Small native Preview proved begin-print O(1), incremental paginate and drawing:
+  begin=1, paginate=5, draw=4, max paginate callback ~11.777 ms.
+- The diagnostic observed END_PRINT twice and stopped before the large 1 MiB lane.
+
+FAILURE-SPECIFIC SOURCE AUDIT
+- GTK emitted the native end-print signal once.
+- GraphiumPrintController._clear_active() then called job.end_print() again when done completed.
+- Therefore the duplicate observation was caused by Graphium cleanup ownership, not GTK and not the incremental paginator.
+
+MATURE-SOURCE RE-AUDIT
+- gedit gedit-print-job.c: end_print_cb releases the compositor; done_cb publishes result and releases operation ownership. done_cb does not call end_print_cb.
+- GNOME Text Editor editor-print-operation.c/editor-page.c: end_print clears the compositor; the page keeps the operation alive until done. done does not repeat render cleanup.
+- Disposition: ADAPT the separation of render-resource cleanup from operation-lifetime cleanup.
+
+REPAIR
+- _PrintJob now owns an explicit _render_released state.
+- native end-print releases render geometry once and marks it released.
+- controller done/_clear_active calls end_print only as a fallback if native end-print was not emitted.
+- end_print itself remains fail-safe if called redundantly, but the normal lifecycle no longer invokes it twice.
+- No paginator, chunking, Pango/Cairo rendering, async ownership, startup, Page Setup or document authority behavior changed.
+
+QUALIFICATION POLICY
+- This remains NON-CANDIDATE.
+- Reissue the exact small+large incremental True-GTK requalification on the repaired tree.
+- Candidate attempts remain 0/2 and canonical Git remains untouched.

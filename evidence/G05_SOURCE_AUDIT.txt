@@ -1,0 +1,59 @@
+GRAPHIUM G05 SOURCE AUDIT
+Date: 2026-08-14
+Baseline: published G04 commit 283f1aa5352c2403ac9e0a945b87cc82cd08cff0
+Baseline tree: 5e2aa256a47739c45f9c79f39a9685b5c6a454d6
+Scope: Search Menu Core / Find / Replace / Go to Line + Trustworthiness Gate
+
+BASELINE FACTS
+- Active GTK history is DeltaHistory, not G02 TextHistory snapshots.
+- Native edits are captured from Gtk.TextBuffer insert/delete signals.
+- G04 renderer-safety guards run before default insert/delete mutation.
+- NativeEditorController suppresses signal re-recording only while restoring/loading.
+- GtkTextBufferPort.apply_replay already provides expected-delete verification plus inverse rollback.
+- The current command catalog owns File/Edit/Help actions and accelerators.
+- Current composition has exactly one document/session/history/editor/writer/lifecycle authority.
+
+G05 INTEGRATION RISKS FOUND
+1. A naive Replace All loop can create many GTK mutations while pretending one logical edit.
+2. begin/end-user-action groups user-visible operations but is not an atomic rollback mechanism.
+3. Generic suppression of G04 renderability guards would create a safety escape hatch.
+4. Full-document snapshot history must not be reintroduced through legacy G02 editor_transaction.py.
+5. Case-insensitive Unicode search cannot safely use ASCII-only folding.
+6. Eager highlight-all/continuous rescanning would add background/document-wide work contrary to the Lightweight Budget.
+7. Repeated replacements must be computed against the original source, not recursively against inserted replacement text.
+8. Any precomputed replacement plan must be rejected if editor state identity has changed before application.
+
+ARCHITECTURAL CONSEQUENCES
+- Search algorithm is GTK-free and literal-only in G05.
+- Search/replacement fields are single-line Unicode text; query must be non-empty; replacement may be empty.
+- Search navigation captures text only on explicit command; no background scanner and no persistent search DB.
+- Find/Find Next/Find Previous never alter state identity/history/Saved-Modified.
+- Replace One and Replace All apply via a new bounded programmatic-delta transaction on NativeEditorController.
+- Programmatic replacement is preflighted against final text renderability before GTK mutation.
+- Existing G04 native edit guards remain authoritative for ordinary typing/paste/delete.
+- No public/generic 'disable renderer safety' switch is introduced.
+- Replace All operations are derived from original non-overlapping matches and applied in descending document offset order.
+- Replace All is one DeltaHistory group/state-ID advance/Undo step; zero changes means no state advance.
+- Programmatic buffer application uses expected-delete checks and inverse rollback; failure restores history/session authorities.
+
+LEGACY CODE DECISION
+- graphium/application/editor_transaction.py remains historical G02 regression code only.
+- G05 MUST NOT route replacement through its full-snapshot transaction model.
+
+SOURCE_AUDIT_RESULT=PASS_FOR_G05_CONTRACT_FREEZE
+GIT_MUTATION=NO_USER_REPO
+
+POST-IMPLEMENTATION AUDIT — 2026-08-14
+- SearchController composition authority count remains exactly one.
+- Find Next/Previous no longer route through find_all(); navigation locates only one requested occurrence.
+- Unicode case-insensitive working state is logical-line bounded; the rejected whole-document boundary-map design is absent.
+- Replace All is the only path that freezes the match set; it has an explicit 50,000-match pre-mutation cap plus the independent DeltaHistory payload cap.
+- Programmatic replacement has one controller entry point, apply_prevalidated_programmatic_group(); it checks state identity, payload and complete final renderability before GTK mutation.
+- GtkTextBufferPort.apply_operations owns expected-delete verification and exact inverse rollback for partial buffer application.
+- No generic renderer-safety disable switch, background search worker/index, persistent search cache/history DB or eager highlight-all subsystem exists.
+- SearchBar construction remains lazy; native close affordance is enabled; ordinary top-level key forwarding/type-to-search is intentionally absent.
+- Search field changes configure only small controller state and do not scan the document.
+- Find and Go to Line are view-only with respect to DeltaHistory/DocumentSession identity.
+- Existing G04 safety/topology/performance authorities remain active regression gates.
+
+POST_IMPLEMENTATION_SOURCE_AUDIT=PASS

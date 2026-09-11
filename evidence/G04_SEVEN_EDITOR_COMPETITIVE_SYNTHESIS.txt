@@ -1,0 +1,17 @@
+Graphium G04 — Seven-editor competitive synthesis receipt
+Date: 2026-08-14
+
+Source analyses supplied by user:
+- FeatherPad-focused competitive/source audit
+- GRAPHIUM_SINTESI_COMPETITIVA_7_EDITOR_20260814.docx
+
+Canonical routing:
+- PRODUCT_CATEGORY=LIGHTWEIGHT_TRUST_EDITOR
+- PERMANENT_COMPARATORS=Leafpad,L3afpad,Mousepad,FeatherPad
+- NORMAL_SAVE_IS_CONTENT_NEUTRAL=YES
+- FILE_MONITOR_IS_OBSERVATION_TRIGGER_NOT_TRUTH_AUTHORITY=YES
+- V1 power-editor feature expansion rejected
+- G13 recovery remains cache-only post-v1 direction
+
+This receipt is non-canonical evidence. The authoritative synthesis is incorporated into the
+existing MO, Roadmap and Architecture Contract; canonical document count remains three.

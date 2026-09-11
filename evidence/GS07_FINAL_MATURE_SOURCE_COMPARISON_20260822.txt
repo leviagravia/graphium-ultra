@@ -1,0 +1,44 @@
+GRAPHIUM GS07 — FINAL CUTOVER MATURE-SOURCE COMPARISON
+Date: 2026-08-22
+State: NON-CANDIDATE / CUTOVER ASSESSMENT INPUT
+
+Compared Graphium GS07 final rebaseline architecture against direct source from:
+- Mousepad 0.7.0
+- gedit
+- GNOME Text Editor
+- Leafpad
+- L3afpad
+- FeatherPad
+
+FINDINGS
+
+1. Concern-oriented qualification rather than release-history universes — CONFIRMED.
+Mousepad tests/mousepad-test exposes stable semantic sections: non-gui, simple-gui, gsettings and actions, with sub-sections such as actions.view. It does not model each historical release as a separately executable validation universe. Graphium GS07's Behavioral, Integration, True-GTK Desktop and Packaging/Release ownership is consistent with this pattern.
+
+2. Component tests belong to build/qualification infrastructure — CONFIRMED.
+gedit/tests/Makefile.am declares its test executables as noinst_PROGRAMS and names component-level tests such as document-loader and document-saver. This supports Graphium's semantic component tests and argues against installing the certification laboratory as product payload.
+
+3. Product installation excludes the test laboratory — CONFIRMED.
+GNOME Text Editor's src/meson.build installs the editor executable; FeatherPad CMake install rules install the executable, desktop/metainfo/icon/help resources; Leafpad/L3afpad src/Makefile.am define the application executable from product source. Graphium GS07 runtime projection contains only bin/graphium, graphium/* and user-facing docs, excluding tests, evidence, legacy verifier and shadow infrastructure.
+
+4. Product version is build/product identity, not validation lineage — CONFIRMED.
+Mousepad derives PACKAGE_VERSION/VERSION from meson.project_version(); GNOME Text Editor uses meson project version. No mature comparator requires historical work-item, candidate attempt, commit or tree identity as runtime properties. Graphium GS07 therefore correctly removes WORK_ITEM/Gxx lineage from runtime product identity while retaining VERSION and application identity.
+
+5. User action tests should execute the real command path — CONFIRMED.
+Mousepad's action test infrastructure activates actions; gedit/Leafpad-style callbacks project action/settings state to the real widget. This supports the corrected GS07 semantic View scenario using action.activate() and rejects the earlier action.change_state()-only oracle.
+
+6. Shared harness helpers are justified only when narrow and reducing duplication — CONFIRMED.
+Mousepad centralizes common test functions; gedit shares component test support. Graphium's final desktop harness is small and narrowly owned: fixtures/runtime/measurements plus semantic scenarios. Final harness LOC is 576 versus 4,780 in published G09 validation tooling.
+
+7. No mature-source justification exists for compatibility wrappers to historical test generations — CONFIRMED.
+The mature comparators keep source history in version control/changelogs rather than executable compatibility universes. GS07 has zero active Gxx-named validation files and zero compatibility surfaces.
+
+8. Source-shape inspection should remain narrow — CONFIRMED/ADAPTED.
+gedit/Mousepad build systems enforce boundaries through build ownership; Graphium retains five small release inspection files because Python lacks compile-time link boundaries. These checks are limited to durable boundaries (layering, writer topology, entrypoints, Gdk3 pinning, hygiene/scope) and do not read historical evidence prose.
+
+9. Stronger Graphium-specific guarantees remain justified — RETAIN.
+The mature-source comparison does not justify deleting GuardedFileWriter, state/savepoint identity, renderability limits, native printing lifecycle or T480 performance gates. They protect real Graphium behavior and remain essential complexity.
+
+FINAL MATURE-SOURCE VERDICT
+GS07's final structure is materially closer to mature concern/component ownership than published G09. The reduction is not achieved by relabeling legacy tools: old executable Gxx history and compatibility surfaces are physically absent from the active tree. No mature-source finding requires restoring them.
+MATURE_SOURCE_CUTOVER_VERDICT=PASS

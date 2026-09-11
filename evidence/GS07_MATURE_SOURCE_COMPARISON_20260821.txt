@@ -1,0 +1,45 @@
+GRAPHIUM GS07 — MATURE SOURCE COMPARISON FOR CUTOVER IMPLEMENTATION
+DATE=2026-08-21
+
+Corpus revalidated byte-for-byte against GS06:
+- Mousepad 0.7.0
+- gedit
+- GNOME Text Editor
+- Leafpad
+- L3afpad
+- FeatherPad
+
+IMPLEMENTATION DECISIONS AND SOURCE COMPARISON
+
+1. Stable product version; remove runtime Gxx work-item identity — ADOPT/ADAPT.
+   Mousepad meson.build owns project version and exports VERSION/PACKAGE_VERSION. GNOME Text Editor meson.build likewise owns product version. No mature runtime analogue was found for candidate/work-item lineage.
+
+2. Concern-oriented executable tests rather than historical release universes — ADOPT.
+   Mousepad tests/mousepad-test dispatches enduring functional sections; gedit tests document-loader/document-saver behavior directly.
+
+3. Thin release/boundary verifier — ADOPT.
+   Mature build/test systems keep packaging/build identity separate from document/editor behavior. Graphium release tests now own only durable boundaries, identity, entrypoints, scope and hygiene.
+
+4. GTK3/GDK3 ABI pinning before direct Gdk import — ADAPT.
+   Mousepad links one gtk+-3.0 ABI at build time. PyGObject requires explicit require_version ownership to achieve equivalent ABI certainty.
+
+5. Shared desktop runner and shared lifecycle/XDG helpers — ADOPT/ADAPT.
+   Mousepad factors common process/cleanup helpers and runs the real application. Graphium uses stronger isolated HOME/XDG roots because its stores are product-local JSON.
+
+6. No global pkill ownership — ADAPT.
+   Mousepad must police its server process. Graphium deliberately uses NON_UNIQUE topology and therefore owns only processes created by the harness.
+
+7. Immutable print snapshot semantics move to GTK-free application owner — ADAPT.
+   gedit encapsulates print jobs separately from document mutation; GNOME Text Editor owns print operation separately from document/page ownership. Graphium keeps Gtk.PrintOperation in the adapter while moving immutable snapshot inputs out of GTK.
+
+8. Page-setup persistence remains native GTK payload with Graphium filesystem safety — ADAPT.
+   Mature print implementations let GTK own print/page semantics. Graphium retains stronger product-local 0600 atomic replacement and fail-soft loading.
+
+9. Manual oracle is exceptional and machine owns invisible postconditions — ADOPT/LOCAL STRONGER.
+   gedit saver tests and Mousepad functional tests assert machine-visible outputs directly. Graphium adds the stricter one-command/manual-after-close rule from observed harness failures.
+
+10. DnD target ownership follows native target-list extension — ADOPT for future G10 reintroduction.
+    gedit and Mousepad extend existing target lists; Leafpad/L3afpad distinguish URI targets explicitly. G10 remains frozen; no G10 DnD code is present in GS07 baseline.
+
+MATURE_ARCHIVE_HASHES=6/6_MATCH_GS06
+WEB_SUBSTITUTION=NO

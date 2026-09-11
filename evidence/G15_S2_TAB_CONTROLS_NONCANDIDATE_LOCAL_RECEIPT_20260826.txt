@@ -1,0 +1,57 @@
+GRAPHIUM G15-S2 — TAB CONTROLS SIMPLIFICATION
+NON-CANDIDATE LOCAL IMPLEMENTATION RECEIPT
+Date: 2026-08-26
+
+PRECONDITION
+G15-S1 Application Icon Identity: focused T480 NON-CANDIDATE True-GTK PASS.
+G15-S2 mature-source audit + contract freeze: PASS before implementation.
+
+IMPLEMENTED SURFACE
+Edit -> Tab Width -> 2 / 3 / 4 / 8 / Other…
+Edit -> Insert Spaces Instead of Tabs [stateful check]
+Edit -> Preferences…: REMOVED
+Other…: narrow numeric chooser, range 1..32, Cancel-neutral.
+
+UNCHANGED AUTHORITIES
+ViewSettings.tab_width / ViewSettings.insert_spaces
+JsonViewSettingsStore keys tab_width / insert_spaces
+defaults 8 / false
+no config migration; no per-document metadata; no new dependency/module/framework/thread/subprocess.
+
+RED -> GREEN
+Permanent focused release test introduced before product mutation.
+Initial result on unmodified G15-S1 source: 5/6 focused tests failed as expected; settings-domain invariant passed.
+After minimal implementation: focused behavioral/release gates PASS.
+
+LOCAL QUALIFICATION
+Behavioral: 190/190 PASS
+Integration: 167/167 PASS
+Packaging/Release: 27/27 PASS
+Full graphium-selftest post failure-specific audit: PASS
+
+UNRELATED SELFTEST EVENT
+An earlier full selftest timed out while starting the fake Hunspell child in
+test_child_exit_mid_session_and_hang_are_bounded_and_reaped. G15-S2 did not modify either
+graphium/infrastructure/hunspell_session.py or tests/integration/test_spellcheck_external.py; both are
+byte-identical to G15-S1. Failure-specific source inspection plus isolated test on G15-S1 authority PASS and
+on G15-S2 working source PASS. Classification: TRANSIENT_LOCAL_TIMING / UNRELATED PRE-EXISTING TEST
+SENSITIVITY. No Hunspell source/test/oracle repair and no scope expansion.
+
+STRUCTURAL DIRECTION
+Runtime line deltas relative G15-S1:
+  graphium/application/commands.py     +4
+  graphium/adapters/gtk/dialogs.py    -25
+  graphium/adapters/gtk/window.py     +13
+  TOTAL                                -8
+Generic Preferences command/action/commit/dialog authority is erased.
+
+PENDING
+Focused automated True-GTK proof: real Edit menu topology; fixed/custom radio state; Other Cancel; direct
+Insert Spaces check state; persistence-failure rollback; document/history/dirty neutrality.
+Manual tests required at this stage: 0.
+
+G15_S2_LOCAL_QUALIFICATION=PASS
+G15_S2_TRUE_GTK=PENDING
+CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO

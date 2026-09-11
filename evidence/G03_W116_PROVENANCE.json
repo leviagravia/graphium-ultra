@@ -1,0 +1,39 @@
+{
+  "work_item": "G03",
+  "baseline_graphium": {
+    "commit": "b91af48a5688772ceffc7eac202c68e1815d7a36",
+    "tree": "3e5b24263d4086a3eccf4897b038b8992703db79"
+  },
+  "calamus_baseline": {
+    "commit": "33331672f5ba8fcc6a7e1ede9ab849638579f0c7",
+    "tree": "db11fee424273c0a383145c132b645c15581b30a"
+  },
+  "direct_sources": [
+    {
+      "file": "calamus_document_save.py",
+      "sha256": "921378e5e89ae49c3226534d6bcd8b46a4eee2895b49d1944f120e34884f911f"
+    },
+    {
+      "file": "calamus_guarded_file_writer.py",
+      "sha256": "7cbc782325447a946f4a0f231b0861a77f1eb99b29b92c5f69626a1355d68564"
+    },
+    {
+      "file": "calamus_document_session_controller.py",
+      "sha256": "72b443c1802e20191522847c69d70596ddbea6134c7ed9128bd0e93c8e3f0e18"
+    },
+    {
+      "file": "calamus_document_session.py",
+      "sha256": "c2bd6e591dc02b3ce6ccb8b60a30bb178d19683ec4697c92e0bb337bb4d5af79"
+    },
+    {
+      "file": "calamus_document_serializer.py",
+      "sha256": "814a65449240f10627c0685ab28b269bb5c6bb1a17ee199a70b723560945a943"
+    },
+    {
+      "file": "calamus_document_identity.py",
+      "sha256": "f53291c156ed39dca0acec2dd8d7f29491b1dfde8971dbeed76a1a7972c7613a"
+    }
+  ],
+  "adaptation": "selective semantic adaptation; Graphium namespace and contracts independent",
+  "runtime_imports_from_calamus_allowed": false
+}

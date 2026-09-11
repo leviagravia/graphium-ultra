@@ -1,0 +1,25 @@
+GRAPHIUM — G01 T480 SUPERSEDED TRANSPORT RUN RECEIPT
+Date: 2026-08-14
+Classification: SUPPORTING HEADLESS EVIDENCE / SUPERSEDED TREE / NOT A PRODUCT FAIL
+
+User-run transport tree:
+  f57e27f0a59d67cff56dacda5f7fe880bd1204a9
+
+Observed terminal result:
+  PREFLIGHT=PASS
+  PAYLOAD_MANIFEST=PASS files=16
+  CHANGED_PATH_SET=PASS count=16
+  G01_HEADLESS_VERIFY=PASS
+  TESTS=44/44_PASS
+  GTK_REQUIRED=NO
+  REAL_GIT_INDEX=CLEAN
+  COMMIT_CREATED=NO
+  PUSH_ATTEMPTED=NO
+  CANONICAL_DOCUMENT_COUNT=3
+  FINAL_PHASE=G01_HEADLESS_CANDIDATE_PASS
+  RUNNER_RC=0
+
+This transport had already been superseded before the run solely because the canonical
+Graphium MO/Roadmap/Architecture Contract had been enriched with the target-user findings
+and Performance & Perceived Latency Budget. Its successful run is therefore recorded as
+supporting evidence only. The superseded tree must not be published.

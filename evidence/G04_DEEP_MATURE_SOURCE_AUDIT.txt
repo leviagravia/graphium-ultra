@@ -1,0 +1,296 @@
+Graphium G04 — DEEP MATURE-SOURCE FALSIFICATION AUDIT
+Date: 2026-08-14
+Baseline: G03 published commit e7045e0ce1c79da71c9968bdfa052df25a5378b7
+Baseline tree: 42fe5340e1181199db86ed69cfa93b4735e45666
+Purpose: rebuild G04 after user challenged the prior audit as shallow/confirmation-biased.
+
+Method rule
+===========
+Every decision below records:
+  ASSUMPTION UNDER TEST
+  CONTRADICTORY / STRESSING SOURCE EVIDENCE
+  ALTERNATIVE MATURE MODEL
+  GRAPHIUM CONSEQUENCE
+  ADOPT / ADAPT / REJECT / DEFER
+
+Evidence was read from the uploaded source archives, not inferred from product reputation.
+Archive SHA-256 values are recorded at the end of this receipt.
+
+1. NATIVE EDIT HISTORY: SNAPSHOTS + TIMER?
+==========================================
+ASSUMPTION UNDER TEST
+  G02 full-text snapshots plus a short G04 inactivity timer might be an acceptably simple
+  native GTK history for a Leafpad/L3afpad-style quick editor.
+
+CONTRADICTORY / STRESSING EVIDENCE
+  Leafpad `src/undo.c`:
+    lines 82-162 build UndoInfo from changed ranges and coalesce single-character runs by
+    key/position/structural continuity; lines 164-189 record insert/delete offsets/text;
+    lines 257-271 connect insert-text, delete-range, begin-user-action and end-user-action.
+
+  L3afpad `src/undo.c`:
+    lines 83-163 use the same range/delta and structural coalescing model;
+    lines 257-272 connect native GtkTextBuffer edit/user-action signals.
+
+  Mousepad 0.7.0 `mousepad-view.c`:
+    many compound operations are bracketed by gtk_text_buffer_begin_user_action() /
+    gtk_text_buffer_end_user_action() (e.g. source hits around 453/526, 575/626,
+    940/1016, 1041/1109, 1164/1285).
+
+  gedit `gedit-commands-search.c` around 361-367 and other components bracket compound
+  buffer modifications with begin/end user action.
+
+  GNOME Text Editor `editor-source-view.c` around 487-495 and 527-554 uses the same native
+  user-action concept for compound operations.
+
+  NEdit `source/undo.c` `SaveUndoInformation()` around lines 178-288 stores the replaced
+  range/old text and merges one-character insert/delete operations by position; it also
+  tracks whether an Undo record returns to the saved state. Its undo memory is explicitly
+  bounded/trimmable around lines 309-453.
+
+  JOE 4.8 `joe/undo.c` has explicit `undomark()` plus insertion/deletion undo records and
+  contiguous merge logic (not whole-document snapshots).
+
+ALTERNATIVE MATURE MODEL
+  Store changed insertion/deletion payload and range information; obtain compound-action
+  boundaries from toolkit/edit semantics, then optionally coalesce structurally compatible
+  adjacent runs. Bound journal payload independently from the document base size.
+
+GRAPHIUM CONSEQUENCE
+  G02 monotonic editor-state identity remains valuable, but active G04 native Undo storage
+  changes to `DeltaHistory`. Fixed wall-clock native commit timing is forbidden.
+
+DECISION
+  ADAPT common mature principle. Do not clone Leafpad's key-global implementation or adopt
+  GtkSourceView merely to inherit its undo manager.
+
+2. LARGE DOCUMENT: IS 750,000-CHAR UNDO CUTOFF ACCEPTABLE?
+==========================================================
+ASSUMPTION UNDER TEST
+  The published G02 policy of disabling multi-snapshot Undo above 750,000 characters might
+  be an acceptable safe degradation for Graphium's quick-edit users.
+
+CONTRADICTORY / STRESSING EVIDENCE
+  Leafpad/L3afpad/NEdit/JOE store changed ranges/text rather than complete document copies
+  per normal edit. Their undo memory cost is therefore driven by edit payload/history depth,
+  not directly by the opened document's complete size.
+
+ALTERNATIVE MATURE MODEL
+  A 1 MiB base document plus a one-character edit stores roughly one changed character plus
+  record metadata and remains normally Undoable.
+
+GRAPHIUM CONSEQUENCE
+  Active G04 native Undo may not switch off merely because the base document exceeds the old
+  G02 snapshot threshold. A hostile 1 MiB regression test is mandatory.
+
+DECISION
+  REJECT the old cutoff as active GTK runtime policy. Preserve the historical G02 code/tests
+  but do not compose TextHistory into the G04 desktop editor.
+
+3. APPLICATION TOPOLOGY: UNIQUE SERVER-LIKE INSTANCE?
+=====================================================
+ASSUMPTION UNDER TEST
+  A unique Gtk.Application reusing its existing Graphium window was assumed harmless for a
+  single-document product.
+
+CONTRADICTORY / STRESSING EVIDENCE
+  Leafpad and L3afpad are naturally independent process/window invocations.
+
+  Airpad `src/main.c` lines 289-317 explicitly documents its policy: first received file is
+  owned by the current program; the program is spawned for each remaining file, one file per
+  process. Line 389 creates GtkApplication with
+    G_APPLICATION_HANDLES_OPEN | G_APPLICATION_NON_UNIQUE.
+
+  Mousepad 0.7.0 supports a `--disable-server` option; `mousepad-application.c` around
+  lines 507-510 adds G_APPLICATION_NON_UNIQUE. Its default server/tabs breadth is useful
+  evidence that application topology is a product decision, not a neutral implementation
+  detail.
+
+ALTERNATIVE MATURE MODEL
+  One quick-edit invocation/process owns one window and one active document. An independent
+  second file-manager invocation does not redirect into/rebind a pre-existing document.
+
+GRAPHIUM CONSEQUENCE
+  G04 uses NON_UNIQUE. Multiple command-line files fan out to separate Graphium processes.
+  File -> Open inside one window can still replace that window after normal unsaved consent.
+
+DECISION
+  ADOPT Airpad/Leafpad-style quick-edit topology. REJECT Mousepad server/tab complexity for v1.
+
+4. PERFORMANCE: IS FIRST WINDOW MAPPED THE SAME AS FIRST EDITABLE?
+=================================================================
+ASSUMPTION UNDER TEST
+  The previous G04 plan treated an exact Graphium first-editable marker and comparator
+  first-window-mapped proxy as usable in one competitive ratio if labels were recorded.
+
+CONTRADICTORY / STRESSING EVIDENCE
+  Leafpad `src/main.c`: gtk_widget_show_all at line 332; command-line `file_open_real()` at
+  line 348. The first mapped window can therefore precede requested-file loading.
+
+  L3afpad `src/main.c`: gtk_widget_show_all at line 250; file_open_real at line 266.
+
+  Janus `src/main.c`: gtk_widget_show_all around line 86; open_file around line 91.
+
+  Airpad has a different order/lifecycle, proving startup sequencing is not uniform across
+  small GTK editors.
+
+ALTERNATIVE MATURE MODEL
+  Separate observable events instead of renaming them:
+    FIRST_VISIBLE = one common external process->mapped-window oracle for every comparator.
+    FIRST_EDITABLE = exact product-aware event only where the same semantics are provable.
+
+GRAPHIUM CONSEQUENCE
+  G04 cross-product ratios use FIRST_VISIBLE only. Graphium exact FIRST_EDITABLE is recorded
+  separately. G12 needs a common external input-acceptance oracle before hard editable-ready
+  ratios across products.
+
+DECISION
+  REJECT heterogeneous readiness ratios. ADOPT explicit two-metric model.
+
+5. READY HANDSHAKE: FILE EXISTENCE AS COMPLETION?
+===============================================
+ASSUMPTION UNDER TEST
+  A ready receipt written to a file could be detected by path existence and then parsed.
+
+CONTRADICTORY / STRESSING EVIDENCE
+  The T480 run demonstrated a real race: the consumer observed the file while its intended
+  multi-line payload was not complete, leading to KeyError('monotonic_ns'). Namespace
+  existence and complete-message publication are not the same synchronization event.
+
+ALTERNATIVE MATURE MODEL
+  Use an IPC primitive with message completion semantics appropriate to this tiny payload.
+
+GRAPHIUM CONSEQUENCE
+  Parent creates an inherited pipe; child emits exactly one short newline-terminated
+  `READY <pid> <monotonic_ns>` record in one os.write. Parent waits for a newline and verifies
+  emitting PID. No filesystem ready marker exists.
+
+DECISION
+  REJECT ready-file protocol; ADOPT inherited pipe for exact Graphium benchmark.
+
+6. ENTRYPOINT / INSTALL ROOT
+============================
+ASSUMPTION UNDER TEST
+  Executable helpers could rely on cwd for sibling package discovery.
+
+CONTRADICTORY / STRESSING EVIDENCE
+  The first T480 pre-product stop produced ModuleNotFoundError before Graphium imported.
+  Lite XL derives its runtime root relative to the executable; gedit's launcher/build context
+  establishes search paths deliberately; JOE uses deterministic configuration/resource
+  fallbacks rather than cwd as hidden authority.
+
+GRAPHIUM CONSEQUENCE
+  Product launcher and executable G04 tools importing Graphium self-root from resolved
+  __file__ before product imports. No global PYTHONPATH workaround.
+
+DECISION
+  ADOPT explicit entrypoint root; REJECT cwd/environment accident as runtime authority.
+
+7. HELP / TOOLBAR / UI DENSITY
+==============================
+ASSUMPTION UNDER TEST
+  G04 should stay minimal enough that any Help surface might be deferred with other UI.
+
+STRESSING EVIDENCE
+  Leafpad/L3afpad's classic small menu-first UI demonstrates that Help/About does not require
+  an IDE-like surface. The user's standing Graphium memorandum explicitly requires a good
+  Help file and same-candidate documentation of visible features.
+
+ALTERNATIVE MODEL
+  Add a classic Help menu whose content files are loaded only on demand. Keep toolbar absent
+  until G06 audits whether its utility justifies additional chrome for this target.
+
+DECISION
+  ADOPT lazy offline User Guide / Keyboard Shortcuts / About in G04; DEFER toolbar to G06.
+
+8. CONTENT NEUTRALITY
+=====================
+ASSUMPTION UNDER TEST
+  No change: Graphium Open/Save must be neutral unless the user explicitly invokes a text
+  transformation.
+
+NEGATIVE ORACLES
+  Parchment's deliberate trimming/final-newline normalization in Open/Save is valid for its
+  own product thesis but incompatible with a general quick editor whose safety promise is
+  "do not silently change my file". Leafpad/L3afpad writer failure modes also remain negative
+  oracles for physical persistence, already solved by published G03.
+
+DECISION
+  REJECT implicit cleanup/normalization. Keep explicit transformations routed to G09.
+
+Final G04 matrix
+================
+  Delta native history                       ADAPT
+  G02 monotonic savepoint identity           ADOPT/PRESERVE
+  Full snapshot per native edit              REJECT active runtime
+  750k document-size Undo cutoff              REJECT active runtime
+  begin/end-user-action compound boundaries  ADOPT
+  structural edit coalescing                 ADAPT
+  wall-clock timer as Undo authority          REJECT
+  one process/window/document                 ADOPT
+  G_APPLICATION_NON_UNIQUE                    ADOPT
+  tabs/server/session topology                REJECT v1
+  common FIRST_VISIBLE comparator metric      ADOPT
+  heterogeneous readiness ratio               REJECT
+  inherited-pipe FIRST_EDITABLE               ADOPT
+  filesystem ready receipt                    REJECT
+  lazy offline Help                           ADOPT
+  toolbar in G04                              DEFER G06
+  GtkSourceView/syntax                        REJECT v1
+
+Source archive SHA-256
+======================
+  leafpad-main.zip              78bae120104965d841097ba438aa02b92efa349f2e9989b5026c1e36dd6b3b6e
+  l3afpad-master.zip            0bc6cbb96fbf37eaf961a73d2a2c5fbcd9682a4d5bf2d7112eb1bfed0b04fdb6
+  airpad-main(2).zip            e4fd59e1d9ef2c78bdd76190a0c1f4a33aa12ef542c6d0f7ee3a8ffeb594be33
+  Janus-main.zip                b14f7596734c835ffc6e721be6af3a7030e234e2783fd8a8c46750a57def5a7f
+  mousepad-0.7.0.tar.xz         e86c59feb08126d4cace368432c16b2dee8e519aaca8a9d2b409ae1cdd200802
+  parchment-main.zip            64b4b194707db70538d861a48b708ef64b243ea5ab92c671ec8223e349e3919f
+  gedit-master(7).zip           957142746934474b84457b6fb171fb1ffcc0942facf7131f9c3c6f492247737d
+  gnome-text-editor-main(7).zip b7e1c075e40929765dfebb68297d9100eb4fb3b7fe71cec53d070cfc451c5555
+  joe-4.8.tar(1).gz             6995b28ee20dcdbbcb5a45a4c110642dc96d67748aea27450c74cdb4dd07cc20
+  lite-xl-master(1).zip         aa57173a582885291ac6227dcc5770a6fa5e743644df6c7f7f4658c2bff4233e
+  nedit-master.zip              f9676c1fedeb2fe92ec24eed7321b5d4472846a695b927a9248c729c249752f6
+
+Audit cross-check before candidate freeze
+=========================================
+The load-bearing source references above were re-opened directly before packaging.
+
+  Leafpad src/main.c lines 332/347-348:
+    window show precedes command-line file_open_real.
+
+  Leafpad src/undo.c lines 82-162, 164-189, 192-206, 257-271:
+    range/delta records, structural/key-contiguous grouping, explicit saved-step tracking,
+    and insert/delete + begin/end-user-action signal integration.
+
+  L3afpad src/main.c lines 250/265-266:
+    window show precedes command-line file_open_real.
+
+  Airpad src/main.c lines 289-316 and 389:
+    first file belongs to current process; remaining files are spawned one per process;
+    GtkApplication is created with HANDLES_OPEN | NON_UNIQUE.
+
+  Mousepad 0.7.0 mousepad-view.c lines 453/526, 575/626, 940/1016, 1041/1109,
+  1164/1285 and later:
+    compound mutations use GtkTextBuffer begin/end-user-action boundaries.
+
+  Mousepad 0.7.0 mousepad-application.c lines 179, 507-510:
+    --disable-server is an explicit option and enables NON_UNIQUE application behavior.
+
+  gedit gedit-commands-search.c lines 354-367:
+    replacement of selected text is explicitly bracketed as one user action.
+
+  GNOME Text Editor src/editor-source-view.c lines 487-495 and 527-554:
+    compound text operations likewise use begin/end-user-action.
+
+  NEdit source/undo.c SaveUndoInformation lines 178-288 and addUndoItem from line 309:
+    edit-range records, contiguous single-character merge, return-to-saved marker and
+    bounded undo memory.
+
+  JOE 4.8 joe/undo.c lines 209-227 and 237-262:
+    undomark grouping plus insertion records/contiguous merge, not whole-document snapshots.
+
+These cross-checks confirm the common principle used by rebuilt G04 while also preserving
+the rejected differences: Graphium does not adopt Leafpad's global key-state technique,
+Mousepad's server/tabs, GtkSourceView, NEdit's toolkit, or JOE's editor architecture.
+

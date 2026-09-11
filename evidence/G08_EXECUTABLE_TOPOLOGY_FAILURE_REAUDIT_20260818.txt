@@ -1,0 +1,53 @@
+GRAPHIUM G08 — EXECUTABLE TOPOLOGY PREQUALIFICATION STOP / MATURE-SOURCE REAUDIT
+Date: 2026-08-18
+
+CLASSIFICATION
+  NON-CANDIDATE PREQUALIFICATION STOP.
+  G08 printing product verdict: NOT REACHED by this stop.
+  Candidate attempts consumed: 0/2.
+  Canonical Git mutation: NONE.
+
+DISCOVERY
+  Before G08 startup/performance qualification, the exact already binding-probed G08 source tree
+  was checked for executable topology.  Eighteen files inherited from published G07 had mode 0644
+  instead of the published 0755 authority: VERIFY_GRAPHIUM.py, bin/graphium,
+  bin/graphium-selftest, and all G04-G07 executable qualification tools.
+  File bytes for the two product launchers were identical to published G07; only mode ownership
+  had been lost.
+
+ROOT CAUSE
+  The local G07 source used as the G08 implementation baseline had been extracted from the handover
+  through an extraction path that preserved bytes but did not restore Unix executable attributes.
+  The defect therefore predated G08 printing edits.  The subsequently computed G08 Git tree treated
+  those accidental 0644 modes as authoritative, so headless tests and the binding probe did not
+  detect that the normal product launcher was no longer executable.
+
+CURRENT GRAPHIUM SOURCE COMPARISON
+  Published G07 handover central-directory authority records mode 0755 for the launcher, selftest,
+  verifier, and desktop/performance tools.  G04 performance/topology oracles launch bin/graphium
+  directly, so executable mode is part of their real runtime contract, not cosmetic packaging.
+
+DIRECT MATURE-SOURCE COMPARISON (preserved corpus, no web)
+  Leafpad src/Makefile.am: bin_PROGRAMS = leafpad.
+  L3afpad src/Makefile.am: bin_PROGRAMS = l3afpad.
+  Mousepad 0.7.0 mousepad/meson.build: executable('mousepad', ..., install: true,
+  install_dir: prefix/bindir).
+  FeatherPad featherpad/CMakeLists.txt: add_executable(featherpad, ...) plus
+  install(TARGETS featherpad RUNTIME DESTINATION .../bin).
+
+DERIVED RULE
+  Executability is owned by source/build/install topology.  A source transport or baseline
+  extraction may not silently demote executable entrypoints to data files.  Exact source
+  qualification must include mode topology before any desktop/performance gate.
+
+REPAIR
+  Rebuild G08 from the same proven G08 bytes while restoring every common G07 file mode from the
+  published G07 handover authority; retain 0755 for the new executable G08 binding-probe tool.
+  Add a G08 regression test that requires 0755 on the verifier, both product entrypoints and every
+  g*.py executable qualification tool.  No G08 printing runtime behavior is changed.
+
+CONSEQUENCE
+  The old G08 source tree dd1450f42453a54909d009224d12c58cb85525e8 is RETIRED as a
+  prequalification source topology.  Because Git tree identity includes executable mode, the T480
+  binding probe PASS on that retired tree cannot qualify the repaired exact tree; the binding probe
+  must be rerun NON-CANDIDATE on the repaired tree before True-GTK/startup qualification.

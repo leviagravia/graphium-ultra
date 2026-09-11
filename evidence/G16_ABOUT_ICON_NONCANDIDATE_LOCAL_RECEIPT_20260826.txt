@@ -1,0 +1,44 @@
+GRAPHIUM G16 ABOUT ICON CORRECTIVE CLOSURE — NON-CANDIDATE LOCAL RECEIPT
+Date: 2026-08-26
+Base: G15 post-publication canonical convergence commit 15ae13fa153d77db74470d5718e8ab9bbbb5708c
+Published product base: commit 16b645ed653be5b44efa8721db11cca63f0633bd / version 0.0.15
+
+CLASSIFICATION
+G15 history rewrite: NO
+G16 corrective line: YES
+Product/oracle root cause: GtkAboutDialog logo-icon-name default image-missing + weak G15-S5 logo oracle
+
+IMPLEMENTATION
+Runtime owner changed: graphium/adapters/gtk/dialogs.py only
+Existing authority reused: graphium.product.APPLICATION_ICON_NAME
+Installed/theme path: dialog.set_logo_icon_name(APPLICATION_ICON_NAME)
+Source fallback: existing Gtk.Window default icon list, exact 48x48 pixbuf
+New icon assets: 0
+New icon authorities: 0
+New runtime modules: 0
+New dependencies: 0
+New config keys: 0
+New threads/subprocesses: 0
+Version during NON-CANDIDATE: 0.0.15
+
+ORACLE REPAIR
+Old implicit/no-logo release oracle: RETIRED/SUPERSEDED
+Exact source fallback 48x48 oracle: PASS
+Existing hicolor five-file topology: PASS
+No About-specific SVG/path/resource: PASS
+Focused G16 release gates: 5/5 PASS
+
+LOCAL QUALIFICATION
+Behavioral=190/190_PASS
+Integration=176/176_PASS
+Packaging_Release=45/45_PASS
+LOCAL_AUTOMATED=411/411_PASS
+
+STATUS
+G16_NONCANDIDATE_LOCAL_IMPLEMENTATION=PASS
+G16_TRUE_GTK=PENDING
+MANUAL_TESTS_PLANNED=0
+CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+FINAL_PHASE=G16_NONCANDIDATE_LOCAL_PASS_TRUE_GTK_PENDING

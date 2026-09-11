@@ -1,0 +1,43 @@
+Graphium G04 — DEAD / UNUSED CODE AUDIT
+Date: 2026-08-14
+
+ACTIVE RUNTIME
+  DeltaHistory + NativeEditorController are active G04 GTK editing authorities.
+
+RETAINED HISTORICAL/PUBLISHED CODE (NOT DEAD)
+  graphium/domain/history.py
+  graphium/application/editor_transaction.py
+These remain published G02 regression authorities and are exercised by G02 tests. They are
+not composed into the G04 desktop runtime, but deleting them in G04 would erase published
+regression/provenance surface and is therefore not justified.
+
+REMOVED/REJECTED FROM ACTIVE G04 DESIGN
+  fixed native edit commit timer;
+  pending full-buffer snapshot path per keystroke;
+  document-size history disable switch in active GTK runtime;
+  unique Gtk.Application server-like forwarding topology;
+  filesystem performance ready flag/receipt;
+  old obsolete G04 tests that asserted the withdrawn architecture.
+
+NO PREMATURE STUBS
+  no search/replace, status, recent, print, preferences, file-monitor, syntax, plugin or
+  toolbar subsystem is created in G04.
+
+HELP
+  User Guide and Keyboard Shortcuts are product material, not dead docs. They are reachable
+  from a lazy Help menu and updated in the same candidate.
+
+RESULT=PASS
+
+FAILURE-SPECIFIC REAUDIT — PATHOLOGICAL LOGICAL LINES
+  The following tempting workarounds were explicitly rejected rather than retained as
+  dormant compatibility paths:
+    - truncating over-budget lines for display;
+    - inserting a synthetic HUGE LINE marker;
+    - silently adding line breaks or forcing hidden content wrapping;
+    - disabling Undo as a response to renderer cost;
+    - installing the same pathological line read-only in Gtk.TextView;
+    - keeping the withdrawn million-character-line fixture as the ordinary 1 MiB test.
+
+  The only active G04 renderer-safety authority is graphium/application/renderability.py,
+  with application-layer pre-install admission plus thin GTK pre-default mutation guards.

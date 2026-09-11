@@ -1,0 +1,257 @@
+GRAPHIUM G15-S5 — HELP / ABOUT / LEGAL CLOSURE
+SOURCE-FIRST MATURE-SOURCE AUDIT + CONTRACT FREEZE
+Date: 2026-08-26
+Mode: AUDIT ONLY / NON-CANDIDATE / NO PRODUCT MUTATION / NO GIT MUTATION
+
+1. ENTRY AUTHORITY
+
+G15-S4 is CLOSED at NON-CANDIDATE True-GTK PASS from user-provided T480 output:
+- 43/43 focused static/headless PASS
+- GTK accelerator routing PASS
+- Uppercase Ctrl+U behavior PASS
+- Lowercase Ctrl+Shift+L behavior PASS
+- history/savepoint unchanged PASS
+- source/package identity unchanged
+- MANUAL_TESTS=0
+- CANDIDATE=NO
+- ATTEMPT_CONSUMED=NO
+- GIT_MUTATION=NO
+
+G15-S5 implementation is NOT started by this audit.
+
+2. CURRENT GRAPHIUM OWNERSHIP
+
+Current G15-S4 source:
+- graphium/adapters/gtk/dialogs.py::show_about() owns the Gtk.AboutDialog projection.
+- graphium/product.py owns stable product identity/version/application-id/icon-name.
+- graphium/adapters/gtk/application.py owns application icon identity and source-run fallback.
+- docs/user/GRAPHIUM_USER_GUIDE.txt owns the user-facing introductory wording and Help description.
+- docs/user/GRAPHIUM_KEYBOARD_SHORTCUTS.txt already contains the G15-S4 shortcuts.
+- no LICENSE/COPYING file currently exists in Graphium.
+- About currently has program name, version, short comments, Python/GTK/display support information,
+  website URL https://github.com/leviagravia/graphium and website label "Graphium repository".
+- About currently lacks author, copyright and license metadata.
+
+The current User Guide introduction contains hard source line breaks inside the sentence beginning
+"Graphium does not use ..."; because Help renders the text verbatim in a wrapping Gtk.TextView, those
+hard newlines are user-visible and should be removed from that logical paragraph.
+
+3. MATURE SOURCE COMPARISON
+
+Direct source corpus inspected:
+- Mousepad 0.7.0
+- gedit
+- GNOME Text Editor
+- FeatherPad
+- Leafpad
+- L3afpad
+
+Findings:
+
+Mousepad:
+- standard Gtk about dialog
+- authors field
+- copyright field
+- GTK license-type
+- application identity as logo-icon-name
+- website
+
+Historical gedit:
+- standard Gtk about dialog
+- authors, copyright, GPL license-type, logo, website
+- keeps About metadata separate from editor behavior
+
+GNOME Text Editor:
+- standard Adwaita About projection
+- application icon, developer/developers, copyright, GPL-3 license, website
+- retains system/debug information in About
+
+FeatherPad:
+- custom About UI, but still projects application icon and explicit author identity
+- repository source carries the full GPLv3 text in COPYING and GPL-3.0+ notices in source
+
+Leafpad/L3afpad:
+- standard Gtk about dialog
+- copyright/authors/logo identity
+
+ADOPT:
+- standard About metadata fields rather than a custom About surface
+- project license text in repository
+- one application icon identity reused in About
+- author/copyright metadata in About
+- keep compact system/debug information
+
+REJECT:
+- custom About dialog
+- About-specific logo asset/path/loader
+- removing current support/system information
+- source-file-wide licensing boilerplate churn in this corrective slice
+- changing/removing the existing private repository URL
+
+4. GPL-3.0-OR-LATER AUTHORITY
+
+User-approved authority:
+- License: GNU General Public License v3.0 or later
+- SPDX expression: GPL-3.0-or-later
+- Copyright © 2026 leviagravia
+- Author: leviagravia@zohomail.eu
+
+GTK3 authority:
+- Gtk.License.GPL_3_0 / GTK_LICENSE_GPL_3_0 means GNU GPL version 3.0 OR LATER.
+- Therefore About must use Gtk.License.GPL_3_0, not CUSTOM and not GPL_3_0_ONLY.
+
+Repository license contract:
+- add exactly one top-level LICENSE authority
+- LICENSE begins with the Graphium project grant explicitly stating "either version 3 of the License,
+  or (at your option) any later version"
+- the unchanged full GNU GPL version 3 license text follows that project notice
+- no second COPYING/LICENSE duplicate is introduced
+- installer copies LICENSE into the installed private Graphium root so installed redistribution retains it
+- no network fetch of license text
+- no new dependency/module/service
+
+Project notice semantic content is frozen as:
+  Graphium
+  Copyright © 2026 leviagravia
+
+  Graphium is free software: you can redistribute it and/or modify it under the terms of the GNU
+  General Public License as published by the Free Software Foundation, either version 3 of the License,
+  or (at your option) any later version.
+
+  Graphium is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even
+  the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+  Public License for more details.
+
+  The full GNU General Public License version 3 follows.
+
+The GPLv3 body must be taken byte-for-byte as legal text from the mature local GPLv3 corpus
+(FeatherPad/GNOME Text Editor COPYING), not rewritten or summarized.
+
+5. PRODUCT METADATA AUTHORITY
+
+Extend existing graphium/product.py only; do not create a metadata module.
+Frozen user-facing values:
+- PRODUCT_NAME = Graphium (unchanged)
+- VERSION = 0.0.14 during NON-CANDIDATE slices (unchanged)
+- AUTHOR = leviagravia@zohomail.eu
+- COPYRIGHT = Copyright © 2026 leviagravia
+- LICENSE_ID = GPL-3.0-or-later
+- repository URL remains https://github.com/leviagravia/graphium
+
+The About adapter consumes these identity constants where relevant. No preference/config/store is created.
+
+6. ABOUT CONTRACT
+
+Help > About remains Gtk.AboutDialog and must project:
+- program name Graphium
+- current version
+- existing short description
+- existing Python / GTK / display support information
+- Author: leviagravia@zohomail.eu via the standard authors metadata field
+- Copyright © 2026 leviagravia
+- Gtk.License.GPL_3_0 (GPL 3.0 or later)
+- existing website URL unchanged: https://github.com/leviagravia/graphium
+- existing website label unchanged: Graphium repository
+- Graphium icon through the already certified S1 default-window-icon authority
+
+Icon rule:
+- no second SVG copy
+- no About-specific file path
+- no About-specific pixbuf loader
+- no new resource framework
+- About should leave/set logo NULL so GTK uses the default application/window icon authority already
+  established by G15-S1; True-GTK must prove the About logo is not image-missing/generic.
+
+Repository rule:
+- the link is deliberately retained even while the repository is private
+- no availability check, web request, fallback URL or warning is added
+
+7. USER GUIDE INTRO CONTRACT
+
+The first introductory paragraph must render as one natural paragraph with no hard newline between
+"Graphium does not use" and "tabs" or inside that sentence.
+
+The final two sentences of the intro paragraph are frozen semantically as:
+  Crash recovery is a narrow safety mechanism, not a session manager. The name Graphium comes from
+  Latin graphium, the stylus used to write on wax tablets: a simple tool for writing.
+
+The name note is intentionally one sentence only. It must not become a history/etymology section.
+No web link or citation is added to the in-app User Guide.
+
+8. HELP SECTION CONTRACT
+
+The existing Help menu topology remains exactly:
+- User Guide
+- Keyboard Shortcuts
+- About
+
+No Legal menu item, License menu item or diagnostics menu is added.
+The User Guide Help section may state compactly that About contains author, copyright, GPL license,
+repository and system information.
+G15-S4 shortcut documentation remains unchanged and authoritative.
+
+9. LIGHTWEIGHT BUDGET
+
+Allowed product/source delta:
+- add top-level LICENSE
+- graphium/product.py: identity/legal constants only
+- graphium/adapters/gtk/dialogs.py: standard About metadata projection only
+- bin/graphium-install: install LICENSE only
+- docs/user/GRAPHIUM_USER_GUIDE.txt: wording/name/About description only
+- permanent release tests for legal/About/help projection
+- canonical docs/evidence updates required by governance
+
+Forbidden:
+- new Python product module
+- new dependency
+- new persistence/configuration key
+- new thread/subprocess/network request
+- custom About dialog
+- custom license viewer
+- extra Help menu item
+- second application icon authority
+- repository reachability check
+- GUI-language/i18n subsystem
+- license headers across the entire source tree in this slice
+
+10. REQUIRED RED→GREEN / HOSTILE GATES
+
+At minimum:
+1. top-level LICENSE exists and is UTF-8
+2. LICENSE project notice contains GPL-3.0-or-later grant semantics
+3. LICENSE contains an unchanged full GPLv3 body
+4. AUTHOR exact = leviagravia@zohomail.eu
+5. COPYRIGHT exact = Copyright © 2026 leviagravia
+6. LICENSE_ID exact = GPL-3.0-or-later
+7. About uses standard Gtk.AboutDialog
+8. About author metadata exact
+9. About copyright exact
+10. About license type is Gtk.License.GPL_3_0 and not ONLY/CUSTOM
+11. repository URL and label byte-for-byte unchanged
+12. About retains Python/GTK/display support information
+13. no About-specific SVG/path/pixbuf loader/resource framework
+14. installer carries LICENSE into staged installed private root
+15. User Guide has no hard break between "does not use" and "tabs"
+16. exact one-sentence Latin-name note exists
+17. Help topology remains exactly User Guide / Keyboard Shortcuts / About
+18. G15-S4 shortcut Help remains Ctrl+U and Ctrl+Shift+L
+19. no new module/dependency/config/thread/subprocess/network owner
+20. full Behavioral/Integration/Packaging-Release regression PASS
+21. focused True-GTK About probe verifies author/copyright/license/repository/system information and
+    Graphium application logo under real GTK3
+22. source/package identity unchanged by T480 probe
+23. MANUAL_TESTS=0 unless automation proves materially insufficient
+
+11. DECISION
+
+G15_S5_SOURCE_FIRST_MATURE_AUDIT=PASS
+G15_S5_GPL3_OR_LATER_AUTHORITY_AUDIT=PASS
+G15_S5_ABOUT_IDENTITY_AUDIT=PASS
+G15_S5_USER_GUIDE_WORDING_AUDIT=PASS
+G15_S5_CONTRACT=FROZEN
+G15_S5_IMPLEMENTATION_STARTED=NO
+G15_S5_CANDIDATE=NO
+ATTEMPT_CONSUMED=NO
+GIT_MUTATION=NO
+
+Implementation requires separate explicit user authorization.

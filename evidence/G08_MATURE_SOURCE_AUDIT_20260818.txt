@@ -1,0 +1,153 @@
+GRAPHIUM G08 — DIRECT MATURE-SOURCE PRINTING AUDIT
+Date: 2026-08-18
+Method: direct preserved source archives only; NO web substitution.
+Verdict: PASS — the thin/lazy GTK3 hypothesis survives, with explicit adaptations.
+
+===============================================================================
+1. LEAFPAD — THIN POSITIVE ORACLE
+===============================================================================
+
+Source: leafpad-main/src/gtkprint.c
+  create_print_operation() creates GtkPrintOperation only when Print/Preview is invoked.
+  begin-print captures GtkTextBuffer text and creates a Pango layout.
+  draw-page renders with Cairo/Pango.
+  Print uses GTK_PRINT_OPERATION_ACTION_PRINT_DIALOG.
+  Preview uses GTK_PRINT_OPERATION_ACTION_PREVIEW.
+  GtkPrintSettings is retained only in process; GtkPageSetup is a static in-process object.
+  Margins are fixed constants.
+
+Source: leafpad-main/src/menu.c
+  Print Preview uses Shift+Ctrl+P; Print uses Ctrl+P.
+
+What this proves for Graphium
+  ADOPT the thin GtkPrintOperation + Pango/Cairo architecture and native preview action.
+  ADAPT away Leafpad global statics and fixed margins: Graphium requires an explicit Page Setup
+  authority and safer object ownership.
+
+===============================================================================
+2. L3AFPAD — MINIMALISM / COMPATIBILITY ORACLE
+===============================================================================
+
+Source: l3afpad-master/src/gtkprint.c and src/menu.c
+  Same essential Leafpad lineage: operation created on demand, Pango/Cairo pagination/rendering,
+  native Preview action, Ctrl+P Print and Shift+Ctrl+P Preview, no startup print subsystem.
+
+What this proves
+  The lightweight target audience already has precedent for conventional Print/Preview shortcuts
+  and a thin native GTK pipeline. No custom preview framework is required for competitive parity.
+
+===============================================================================
+3. MOUSEPAD 0.7.0 — MATURE SETTINGS CONTRAST
+===============================================================================
+
+Source: mousepad/mousepad-print.c
+  MousepadPrint subclasses GtkPrintOperation.
+  Print object is created in the File action, not at application startup.
+  GtkSourcePrintCompositor is created only inside interactive printing.
+  Print settings/page setup are loaded only then and saved only after APPLY.
+  Page setup is embedded in the print dialog and persisted.
+  A custom Document Settings tab exposes headers, line numbers, wrapping, syntax highlighting
+  and multiple fonts.
+
+Source: mousepad/mousepad-window.c around mousepad_print_document_interactive()
+  The operation is created, run and unreffed around the explicit Print action.
+
+Source: Mousepad NEWS
+  Historical standalone Page Setup was removed in favor of the embedded print-dialog model.
+
+Graphium decision
+  ADOPT lazy settings I/O and APPLY-only state advancement.
+  ADAPT persistence to Graphium's explicit Page Setup requirement.
+  REJECT GtkSourcePrintCompositor because Graphium intentionally owns a thin Gtk.TextView and must
+  not add GtkSourceView as a print-only dependency.
+  REJECT Mousepad's custom print options tab: headers/line-number interval/syntax colors/three
+  print fonts are outside Graphium's lightweight plain-text scope.
+
+===============================================================================
+4. GEDIT — RICH CONTRAST / LIFECYCLE WARNING
+===============================================================================
+
+Source: gedit/gedit-app.c
+  App owns default GtkPageSetup/GtkPrintSettings but lazy-loads them only from getters.
+  State is persisted to product-local files.
+
+Source: gedit/gedit-print-job.c and gedit/gedit-tab.c
+  GtkPrintOperation is created per job, GtkSourcePrintCompositor paginates/renders, async printing
+  is enabled, a custom preferences widget is added and preview is intercepted to create a custom
+  GeditPrintPreview. Tab state tracks preview/job lifecycle, status/progress, focus and cleanup.
+  Custom preview implementation itself is large.
+
+Graphium decision
+  ADOPT the important principle: even a rich editor can lazy-load page/print state.
+  REJECT custom preview, async job state, progress UI and tab/job ownership. Those solve gedit's
+  richer editor requirements and would add lifecycle/state complexity without Graphium value.
+
+===============================================================================
+5. GNOME TEXT EDITOR — MODERN CONTRAST
+===============================================================================
+
+Source: src/editor-print-operation.c
+  EditorPrintOperation is created on demand.
+  Its constructed() method then loads print-settings and page-setup files; i.e. state I/O is tied
+  to print-operation creation, not normal startup.
+  GtkSourcePrintCompositor is created in begin-print and destroyed in end-print.
+  APPLY saves page setup/print settings.
+
+Source: src/editor-page.c
+  _editor_page_print() constructs the operation only on the explicit action, runs the native GTK
+  print dialog and handles APPLY/error results.
+
+Graphium decision
+  ADOPT on-demand state I/O and operation lifetime.
+  REJECT GtkSourcePrintCompositor/GtkSourceView coupling for Graphium.
+  Do not infer that persistent printer settings are required merely because a richer editor has them.
+
+===============================================================================
+6. FEATHERPAD — QT POWER CONTRAST
+===============================================================================
+
+Source: featherpad/printing.cpp/.h and fpwin.cpp
+  Printing/QPrinter are constructed only after the user invokes Print.
+  FeatherPad clones the document, can complete syntax highlighting, opens QPrintDialog and then
+  renders on a QThread, including dark-scheme handling, page ranges/reverse order and page numbers.
+
+Graphium decision
+  ADOPT explicit-action object construction and snapshot-style isolation as principles.
+  REJECT worker-thread printing, syntax-highlighting completion, dark print rendering and custom
+  Qt-specific page machinery. Graphium's single plain-text GTK document does not justify them.
+
+===============================================================================
+7. FALSIFICATION RESULTS
+===============================================================================
+
+Assumption: print machinery can remain absent from normal startup.
+  Contradicting evidence: NONE in the inspected lightweight/mature call sites.
+  Decision: ADOPT STRICT LAZY STARTUP ISOLATION.
+
+Assumption: Page Setup should be a Graphium-owned persistent authority.
+  Contradicting evidence: Leafpad/L3afpad keep only fixed/in-process state; Mousepad later removed
+  a standalone Page Setup surface.
+  Supporting alternative evidence: Mousepad, gedit and GNOME Text Editor persist page setup.
+  Graphium roadmap explicitly requires standalone Page Setup and rejects fixed inherited constants.
+  Decision: ADAPT — standalone Page Setup remains; persist only page setup, lazily.
+
+Assumption: native GTK preview is sufficient.
+  Contradicting evidence: gedit implements a custom preview, but at substantial lifecycle/code cost.
+  Positive evidence: Leafpad/L3afpad use GTK native PREVIEW directly.
+  Decision: ADOPT NATIVE GTK PREVIEW; custom preview REJECTED.
+
+Assumption: GtkSourcePrintCompositor is the right pagination engine.
+  Contradicting evidence: Leafpad/L3afpad render directly with Pango/Cairo; Graphium is deliberately
+  Gtk.TextView-only.
+  Decision: REJECT GtkSourceView dependency; ADOPT Pango/Cairo.
+
+Assumption: printing needs a background/async worker.
+  Contradicting evidence: Leafpad/L3afpad operate synchronously; async machinery in gedit/FeatherPad
+  brings additional lifecycle/ownership complexity.
+  Decision: REJECT worker/service/async by default. Re-open only after a measured valid product
+  failure and mandatory mature-source re-audit.
+
+Assumption: rich print preferences are required for maturity.
+  Contradicting evidence: the lightweight editors do not require Mousepad/gedit's extensive custom
+  tabs to provide usable printing.
+  Decision: REJECT custom print-preference UI in G08.

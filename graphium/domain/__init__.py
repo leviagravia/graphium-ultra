@@ -1,0 +1,1 @@
+"""Graphium pure domain layer."""
