@@ -902,3 +902,7 @@ is **CLOSED / CERTIFIED / PUBLISHED / PUBLIC / RELEASED / CANONICALLY CONVERGED*
 not another product patch.
 
 Graphium Ultra remains **DEFINED / NOT OPENED** and still requires separate explicit authorization.
+
+### Graphium Ultra 0.0.1 — PUBLIC / RELEASED / CANONICALLY CONVERGED — 2026-09-11
+
+Graphium Ultra 0.0.1 is CLOSED / CERTIFIED / PUBLISHED / PUBLIC / RELEASED at release commit `9a011746819f640b5a7293d6dfe44210a6e19c9d`, tree `7f227dd5d9bd5a35bc08ef116e894ca8f2124272`, tag `v0.0.1`. Candidate R1 passed 4/4 on the real installed projection; adopted pre-Candidate authorities are 817/817 permanent tests and cumulative Ultra True-GTK 7/7. The final Debian package is `graphium-ultra_0.0.1-1_all.deb` with SHA-256 `239792956b0ecc11e6dcd2358992c582bb109bdf6f8be22b2873463c56e4351d`. The release tag remains pinned to the exact certified Candidate tree. This main-branch convergence is documentation/evidence-only and does not move the release tag.

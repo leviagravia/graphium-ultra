@@ -11246,3 +11246,35 @@ and explicit authorization. Graphium Ultra remains DEFINED / NOT OPENED and requ
 
 NEXT_STEP=RUN_POST_RELEASE_GOVERNANCE_CONVERGENCE_FINALIZER
 FINAL_PHASE=PLUS_0.0.1_RELEASED_POST_RELEASE_CONVERGENCE_AUTHORIZED
+
+================================================================================
+2026-09-11 — GRAPHIUM ULTRA 0.0.1 PUBLICATION / RELEASE / CONVERGENCE
+================================================================================
+State: BINDING / CLOSED / CERTIFIED / PUBLISHED / PUBLIC / RELEASED / CANONICALLY CONVERGED
+
+Repository:
+  https://github.com/leviagravia/graphium-ultra
+Release source commit:
+  9a011746819f640b5a7293d6dfe44210a6e19c9d
+Release source tree:
+  7f227dd5d9bd5a35bc08ef116e894ca8f2124272
+Tag:
+  v0.0.1
+Release URL:
+  https://github.com/leviagravia/graphium-ultra/releases/tag/v0.0.1
+Debian artifact:
+  graphium-ultra_0.0.1-1_all.deb
+Debian SHA-256:
+  239792956b0ecc11e6dcd2358992c582bb109bdf6f8be22b2873463c56e4351d
+Asset URL:
+  https://github.com/leviagravia/graphium-ultra/releases/download/v0.0.1/graphium-ultra_0.0.1-1_all.deb
+
+The release tag points to the exact Candidate R1 / Integral Closure source. Product/runtime/test/user-help/README/icon/LICENSE/installer bytes at the tag are unchanged from the certified source. The subsequent main-branch convergence changes canonical status/evidence only and does not move the tag.
+
+Candidate history:
+  R1=CERTIFIED_PASS_4_OF_4
+  ATTEMPTS_USED=1/2
+  SECOND_ATTEMPT=UNUSED_RETIRED
+
+NEXT_STEP=POST_PUBLICATION_READONLY_AUDIT_AND_FINAL_HANDOVER
+FINAL_PHASE=ULTRA_0.0.1_RELEASED_CANONICAL_CONVERGENCE
