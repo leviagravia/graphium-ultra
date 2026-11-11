@@ -88,3 +88,4 @@ Graphium Ultra is free software under the **GNU General Public License v3.0 or l
 ## Disclaimer
 
 This software was built with substantial assistance from AI. AI wrote a substantial amount of this software. Architecture, product decisions, testing criteria and release acceptance remain directed and reviewed by the project author.
+
